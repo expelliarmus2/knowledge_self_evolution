@@ -159,3 +159,22 @@ web:
 
 logging:
   level: INFO
+
+# ------------------------- 统一门面 / 科研入组 demo -------------------------
+unified:
+  default_engine: kb                 # 未命中关键词时的默认引擎
+  cohort_keywords:                   # 规则路由关键词（命中 → cohort 引擎）
+    - 入组
+    - 筛查
+    - 符合
+    - 年龄
+    - 患者
+    - 用药
+    - 排除
+    - 纳入
+    - 队列
+    - 受试者
+
+cohort:
+  sqlite_path: data/cohort/demo.db   # 科研入组 demo SQLite 库
+  seed_count: 30                     # 合成患者数
