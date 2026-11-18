@@ -49,9 +49,23 @@ knowledge_self_evolution/
 │   ├── app.py               #   /api/graph /api/stats /api/search /api/evolve
 │   ├── index.html, static/  #   检索子图渲染、chunk 排序、演进操作面板
 │   └── lib/                 #   vis-network.min.js（本地）
+├── cohort/                  # 科研入组筛查 demo（SQLite，统一门面第二个引擎）
+│   ├── schema.sql           #   5 表：patients/diagnoses/labs/medications/events
+│   ├── query_ir.py          #   入组条件 IR（include/exclude + 时间窗）
+│   ├── compiler.py          #   IR → SQL（每条件一对 pass/unknown 布尔列）
+│   ├── engine.py            #   CohortEngine（BaseEngine 实现）
+│   └── seed.py              #   合成 30 例结构化患者 + DEMO_IR
+├── unified/                 # 统一检索门面：BaseEngine/注册表/路由/结果信封
+│   ├── engine.py            #   EngineRegistry / KBEngineAdapter / UnifiedEngine
+│   ├── router.py            #   query_type 显式优先，否则关键词/输入形态
+│   └── demo.py              #   同一入口跑 KB 问答 + 入组筛查
+├── docs/                    # 场景文档
+│   ├── scenarios.md         #   场景 A：两场景问题 + 图/存储结构展示
+│   └── storage_format_scenarios.md  # 场景 B：四层次框架下的存储选型
 ├── data/raw/                # 输入文档（.jsonl：{doc_id, text}；或 .txt/.md 每文件一篇）
 ├── data/processed/          # 产物：graph.pkl / graph_export.json / *.faiss / build_report.json
-├── tests/test_smoke.py      # 端到端冒烟测试（mock 离线，覆盖全部验收点）
+├── data/cohort/demo.db      # 科研入组 demo SQLite（seed 自动生成）
+├── tests/                   # test_smoke.py + test_cohort_engine.py + test_unified_facade.py
 └── utils/                   # config(yaml+环境变量覆盖) / prompts / runtime(并行池) / text(解析清洗)
 ```
 
@@ -85,6 +99,13 @@ python -m pipeline.run evolve --ops '[
 
 # 5. 测试
 python -m pytest tests/ -q
+
+# 6. 统一门面 demo（科研入组筛查 + 知识库问答同一入口）
+python -m cohort.seed --count 30   # 生成合成结构化患者 demo 库
+python -m unified.demo --json      # 统一入口跑两条查询（KB 服务未启动时自动降级跳过 KB）
+
+> **场景文档**：两个检索场景的问题、图/存储结构展示 → [docs/scenarios.md](docs/scenarios.md)；
+> 用“查询语言/逻辑模型/执行引擎/物理存储”四层次解释存储选型 → [docs/storage_format_scenarios.md](docs/storage_format_scenarios.md)。
 ```
 
 ## 配置（config/default.yaml）
