@@ -1,0 +1,22 @@
+2026-11-14 14:06:18,561 - INFO - ============================================================
+2026-11-14 14:06:18,561 - INFO - ChunkHop Retriever Initialization
+2026-11-14 14:06:18,562 - INFO - ============================================================
+2026-11-14 14:06:19,120 - INFO - 
+============================================================
+2026-11-14 14:06:19,121 - INFO -   模式: dual_seed
+2026-11-14 14:06:19,121 - INFO - ============================================================
+2026-11-14 14:06:19,122 - INFO -   skip_entity_in_subgraph=False, use_triple_weight_no_entity=False
+2026-11-14 14:06:19,128 - INFO - Loading graph from /mnt/e/yf/knowledge_self_evolution/data/h2official/graph_export_with_chunk_hop
+2026-11-14 14:06:19,564 - INFO - Graph loaded: 108854 nodes, 276343 edges (passage_only=False)
+Traceback (most recent call last):
+  File "/mnt/e/yf/knowledge_self_evolution/tools/run_hpopt_doclevel.py", line 98, in <module>
+    E.main()
+  File "/mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/src/search_graph/evaluate_with_timing.py", line 845, in main
+    retriever = ChunkHopRetriever(
+  File "/mnt/e/yf/knowledge_self_evolution/tools/run_hpopt_doclevel.py", line 58, in _pinit
+    return _oinit(self, *a, **kw)
+  File "/mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/src/search_graph/chunk_hop_retriever.py", line 209, in __init__
+    self._build_meta_caches()
+  File "/mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/src/search_graph/chunk_hop_retriever.py", line 321, in _build_meta_caches
+    for i, nbrs in dense_adj.items():
+AttributeError: 'list' object has no attribute 'items'

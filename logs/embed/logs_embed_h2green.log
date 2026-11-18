@@ -1,0 +1,16 @@
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 80834.62it/s]
+model loaded on cuda
+  passages: 0/11656 (8s)
+passages: (11656, 1024) -> passage_vecs.npy (1511s)
+  triples: 0/131092 (0s)
+  triples: 12800/131092 (55s)
+  triples: 25600/131092 (110s)
+  triples: 38400/131092 (165s)
+  triples: 51200/131092 (219s)
+  triples: 64000/131092 (273s)
+  triples: 76800/131092 (327s)
+  triples: 89600/131092 (383s)
+  triples: 102400/131092 (438s)
+  triples: 115200/131092 (493s)
+  triples: 128000/131092 (548s)
+triples: (131092, 1024) -> triple_vecs.npy (563s)

@@ -1,0 +1,49 @@
+building 2560 selected {'count_shared': 4727, 'idf_shared': 4950, 'idf_triple': 5013}
+building 5248 selected {'count_shared': 9262, 'idf_shared': 9905, 'idf_triple': 10008}
+building 7870 selected {'count_shared': 13942, 'idf_shared': 14880, 'idf_triple': 15002}
+building 7881 selected {'count_shared': 13957, 'idf_shared': 14895, 'idf_triple': 15019}
+building 10692 selected {'count_shared': 18604, 'idf_shared': 19847, 'idf_triple': 20007}
+building 13448 selected {'count_shared': 23300, 'idf_shared': 24807, 'idf_triple': 25014}
+building 16017 selected {'count_shared': 28001, 'idf_shared': 29668, 'idf_triple': 30002}
+building 16018 selected {'count_shared': 28016, 'idf_shared': 29685, 'idf_triple': 30017}
+building 16909 selected {'count_shared': 32763, 'idf_shared': 34579, 'idf_triple': 35007}
+building 19786 selected {'count_shared': 37530, 'idf_shared': 39493, 'idf_triple': 40006}
+building 22664 selected {'count_shared': 42337, 'idf_shared': 44358, 'idf_triple': 45007}
+building 25643 selected {'count_shared': 47217, 'idf_shared': 49259, 'idf_triple': 50013}
+building 28608 selected {'count_shared': 52062, 'idf_shared': 54049, 'idf_triple': 55015}
+building 31642 selected {'count_shared': 56933, 'idf_shared': 58850, 'idf_triple': 60005}
+building 34719 selected {'count_shared': 61832, 'idf_shared': 63600, 'idf_triple': 65008}
+building 37776 selected {'count_shared': 66770, 'idf_shared': 68345, 'idf_triple': 70003}
+building 37787 selected {'count_shared': 66779, 'idf_shared': 68354, 'idf_triple': 70014}
+building 40886 selected {'count_shared': 71853, 'idf_shared': 73128, 'idf_triple': 75005}
+building 44063 selected {'count_shared': 76919, 'idf_shared': 77853, 'idf_triple': 80009}
+building 47297 selected {'count_shared': 82050, 'idf_shared': 82608, 'idf_triple': 85004}
+building 50608 selected {'count_shared': 87138, 'idf_shared': 87307, 'idf_triple': 90015}
+building 53841 selected {'count_shared': 92220, 'idf_shared': 91938, 'idf_triple': 95010}
+building 57286 selected {'count_shared': 97382, 'idf_shared': 96638, 'idf_triple': 100009}
+building 57297 selected {'count_shared': 97389, 'idf_shared': 96647, 'idf_triple': 100019}
+building 60719 selected {'count_shared': 102465, 'idf_shared': 101286, 'idf_triple': 105015}
+building 64286 selected {'count_shared': 107628, 'idf_shared': 105886, 'idf_triple': 110009}
+building 67775 selected {'count_shared': 112960, 'idf_shared': 110560, 'idf_triple': 115014}
+building 71286 selected {'count_shared': 118299, 'idf_shared': 115181, 'idf_triple': 120002}
+building 71287 selected {'count_shared': 118315, 'idf_shared': 115198, 'idf_triple': 120019}
+building 75130 selected {'count_shared': 123796, 'idf_shared': 119867, 'idf_triple': 125009}
+building 78774 selected {'count_shared': 129211, 'idf_shared': 124356, 'idf_triple': 130017}
+building 82819 selected {'count_shared': 134753, 'idf_shared': 129025, 'idf_triple': 135007}
+building 82830 selected {'count_shared': 134768, 'idf_shared': 129038, 'idf_triple': 135016}
+building 86786 selected {'count_shared': 140390, 'idf_shared': 133614, 'idf_triple': 140007}
+building 86797 selected {'count_shared': 140398, 'idf_shared': 133622, 'idf_triple': 140017}
+building 90929 selected {'count_shared': 146217, 'idf_shared': 138199, 'idf_triple': 145007}
+building 90940 selected {'count_shared': 146225, 'idf_shared': 138204, 'idf_triple': 145017}
+building 94997 selected {'count_shared': 152060, 'idf_shared': 142713, 'idf_triple': 150011}
+building 99141 selected {'count_shared': 157955, 'idf_shared': 147159, 'idf_triple': 155006}
+building 99152 selected {'count_shared': 157958, 'idf_shared': 147162, 'idf_triple': 155010}
+building 103497 selected {'count_shared': 164082, 'idf_shared': 151638, 'idf_triple': 160002}
+building 103508 selected {'count_shared': 164091, 'idf_shared': 151642, 'idf_triple': 160008}
+building 107975 selected {'count_shared': 170365, 'idf_shared': 156312, 'idf_triple': 165009}
+building 112618 selected {'count_shared': 176484, 'idf_shared': 160695, 'idf_triple': 170008}
+building 112619 selected {'count_shared': 176496, 'idf_shared': 160703, 'idf_triple': 170016}
+count_shared {'undirected_pairs': 178906, 'directed_records_equivalent': 357812, 'connected_passages': 11626, 'isolated_passages': 21, 'max_degree': 704, 'score_min': 1.0, 'score_max': 58.0, 'counts': {'direct_positive': 178906, 'bridge_positive': 0, 'bridge_only': 0}, 'overlay_sha256': 'c7a9b5e08c56a8491b7e3e5f570d32c490b7b0506732a70abe74ff3643e36110', 'edge_records_sha256': '7a51d54c98235cbefcea41d7870d6eb503b4ddc729516ab3b59eb1443513a9c7'}
+idf_shared {'undirected_pairs': 162336, 'directed_records_equivalent': 324672, 'connected_passages': 11626, 'isolated_passages': 21, 'max_degree': 309, 'score_min': 0.6264389145825254, 'score_max': 46.843791818373134, 'counts': {'direct_positive': 162336, 'bridge_positive': 0, 'bridge_only': 0}, 'overlay_sha256': '248e883bd58cf74eabcfecf5aa6b83598a90ab441acbe2241490634fb1948b37', 'edge_records_sha256': 'd2cd6766f6e20373de15bc222369c6f840a70bcb24de68582c36f4d27d62d2df'}
+idf_triple {'undirected_pairs': 171977, 'directed_records_equivalent': 343954, 'connected_passages': 11626, 'isolated_passages': 21, 'max_degree': 538, 'score_min': 0.3132194572912627, 'score_max': 65.05286092152363, 'counts': {'direct_positive': 169718, 'bridge_positive': 150185, 'bridge_only': 2259}, 'overlay_sha256': '14c8e062b7a47b18bbf2172ad348c4108c5c812f37bd2f6a3b9c5a40f2f1c968', 'edge_records_sha256': '685536479c0d8f547d716504d98c7acae8abb97c282b65e421c36794dca44f54'}
+done

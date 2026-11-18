@@ -1,0 +1,95 @@
+/* 知识库自演进 · 可视化页面样式 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: #0f1420; color: #dbe2ef; }
+
+/* 整体弹性分栏：header/footer 自适应，图区永远填满剩余空间（不溢出视口） */
+body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 14px; background: #151c2c; border-bottom: 1px solid #263149;
+  flex-wrap: wrap; flex-shrink: 0;
+}
+.brand { font-size: 16px; font-weight: 700; color: #7fb0ff; white-space: nowrap; }
+.brand .sub { font-size: 11px; font-weight: 400; color: #6b7a99; margin-left: 8px; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 280px; }
+#query-input { flex: 1; min-width: 200px; max-width: 420px; }
+input, textarea {
+  background: #0f1420; border: 1px solid #2c3a55; color: #dbe2ef;
+  border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none;
+}
+input:focus, textarea:focus { border-color: #4a7bd0; }
+label.inline { font-size: 12px; color: #93a3c0; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+label.inline input { width: 52px; }
+button {
+  border: 1px solid #33476e; background: #1a2438; color: #cfe0ff;
+  padding: 7px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap;
+}
+button:hover { background: #22304a; }
+button.primary { background: #2b5db8; border-color: #2b5db8; color: #fff; }
+button.primary:hover { background: #3670d6; }
+
+main { flex: 1; display: flex; min-height: 0; }
+#graph-panel { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; min-height: 260px; }
+#graph-canvas { flex: 1; min-height: 220px; background: #0f1420; }
+#legend {
+  display: flex; flex-wrap: wrap; gap: 10px; padding: 6px 12px; font-size: 12px; color: #93a3c0;
+  background: #121a2b; border-bottom: 1px solid #1f2b44; flex-shrink: 0;
+}
+.lg { display: flex; align-items: center; gap: 5px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.dot.entity { background: #4a90e2; }
+.dot.chunk { background: #8e44ad; }
+.dot.seed { background: #2ecc71; }
+.dot.hop { background: #e67e22; }
+.line { width: 18px; height: 0; display: inline-block; border-top: 2px solid; }
+.line.triple { border-color: #b03060; }
+.line.hop-edge { border-color: #e67e22; }
+.line.conclude { border-color: #6b7a99; border-top-style: dashed; }
+
+#status-bar {
+  padding: 6px 14px; font-size: 12px; color: #93a3c0; background: #121a2b;
+  border-top: 1px solid #1f2b44; min-height: 28px; flex-shrink: 0;
+}
+#status-bar.error { color: #ff8080; }
+
+aside#side-panel {
+  width: 400px; max-width: 45vw; background: #121a2b; border-left: 1px solid #263149;
+  display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
+}
+.tabs { display: flex; border-bottom: 1px solid #263149; }
+.tab {
+  flex: 1; border: none; background: none; padding: 10px 0; color: #6b7a99; font-size: 13px;
+  border-radius: 0; cursor: pointer;
+}
+.tab.active { color: #7fb0ff; border-bottom: 2px solid #2b5db8; background: none; }
+.tab-body { padding: 14px; }
+h3 { font-size: 13px; color: #a9bbdc; margin: 12px 0 8px; }
+h3:first-child { margin-top: 0; }
+.tag { font-size: 10px; background: #22304a; color: #7fb0ff; padding: 2px 6px; border-radius: 4px; }
+
+.list { display: flex; flex-direction: column; gap: 6px; }
+.empty { color: #55617a; font-size: 12px; padding: 6px; }
+.triple-item {
+  font-size: 12.5px; padding: 7px 9px; background: #18223a; border-radius: 6px;
+  border-left: 3px solid #b03060; cursor: pointer;
+}
+.triple-item.filtered { border-left-color: #f5c542; background: #1e2a44; }
+.triple-item .rel { color: #e8a0b8; }
+.triple-item .score { color: #6b7a99; font-size: 11px; float: right; }
+.chunk-item {
+  font-size: 12.5px; padding: 7px 9px; background: #18223a; border-radius: 6px;
+  border-left: 3px solid #8e44ad; cursor: pointer;
+}
+.chunk-item .meta { color: #6b7a99; font-size: 11px; }
+.chunk-item .text { color: #93a3c0; margin-top: 3px; font-size: 12px; line-height: 1.5; }
+
+.hint { font-size: 12px; color: #93a3c0; line-height: 1.6; margin-bottom: 10px; }
+.hint code { background: #0f1420; padding: 1px 5px; border-radius: 3px; color: #7fb0ff; }
+textarea#evolve-ops { width: 100%; font-family: Consolas, monospace; font-size: 12px; }
+.mono { font-family: Consolas, monospace; font-size: 11.5px; color: #93a3c0; white-space: pre-wrap; margin-top: 10px; }
+
+footer {
+  padding: 6px 18px; font-size: 11px; color: #55617a; background: #151c2c;
+  border-top: 1px solid #263149; text-align: center; flex-shrink: 0;
+}

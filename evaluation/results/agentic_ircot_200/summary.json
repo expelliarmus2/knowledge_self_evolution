@@ -1,0 +1,18 @@
+{
+  "mode": "ircot",
+  "n": 200,
+  "failures": 0,
+  "em": 0.335,
+  "f1": 0.4547639999999999,
+  "evidence_recall": 0.8183349999999998,
+  "avg_docs": 10.535,
+  "avg_llm_calls": 4.975,
+  "avg_ms": 5691.239999999995,
+  "elapsed_sec": 146.8,
+  "config": {
+    "max_steps": 6,
+    "top_k_per_step": 5,
+    "evidence_max_docs": 32,
+    "include_triples": true
+  }
+}

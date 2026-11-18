@@ -1,0 +1,12 @@
+Your task is to extract named entities (NER) from the given paragraph.
+Respond with a JSON object only, in the format {"named_entities": ["entity1", "entity2", ...]}.
+
+Requirements:
+- Extract concrete entities such as people, organizations, locations, dates, products, technologies, events.
+- Keep entity names exactly as they appear in the text; do not merge or rewrite them.
+- Do not output anything other than the JSON object.
+
+Paragraph:
+```
+{passage}
+```

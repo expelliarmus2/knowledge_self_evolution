@@ -1,0 +1,87 @@
+{
+  "config": {
+    "processed": "data/processed_musique_h2prompt_b10k",
+    "test": "/mnt/e/yf/knowledge_self_evolution/data/test/musique_dev.json",
+    "top_ks": [
+      5,
+      10,
+      15,
+      20,
+      30
+    ],
+    "workers": 8,
+    "llm_filter": false,
+    "limit": 1000,
+    "supporting_only": true
+  },
+  "coverage": {
+    "questions": 1000,
+    "fully_covered": 998,
+    "no_gold_in_graph": 2,
+    "graph_docs": 9830
+  },
+  "overall": {
+    "n": 1000,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.568,
+        "full_hit": 0.241,
+        "answer_hit": 0.451
+      },
+      "10": {
+        "doc_recall": 0.6599999999999995,
+        "full_hit": 0.354,
+        "answer_hit": 0.588
+      },
+      "15": {
+        "doc_recall": 0.6854999999999997,
+        "full_hit": 0.384,
+        "answer_hit": 0.637
+      },
+      "20": {
+        "doc_recall": 0.702333333333333,
+        "full_hit": 0.401,
+        "answer_hit": 0.674
+      },
+      "30": {
+        "doc_recall": 0.754499999999999,
+        "full_hit": 0.483,
+        "answer_hit": 0.718
+      }
+    },
+    "avg_query_ms": 844.8276000000003
+  },
+  "fully_covered_subset": {
+    "n": 998,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.5691382765531062,
+        "full_hit": 0.24148296593186372,
+        "answer_hit": 0.45190380761523047
+      },
+      "10": {
+        "doc_recall": 0.6613226452905806,
+        "full_hit": 0.35470941883767537,
+        "answer_hit": 0.5891783567134269
+      },
+      "15": {
+        "doc_recall": 0.6868737474949896,
+        "full_hit": 0.3847695390781563,
+        "answer_hit": 0.6382765531062125
+      },
+      "20": {
+        "doc_recall": 0.7037408149632596,
+        "full_hit": 0.40180360721442887,
+        "answer_hit": 0.6753507014028056
+      },
+      "30": {
+        "doc_recall": 0.7560120240480952,
+        "full_hit": 0.48396793587174347,
+        "answer_hit": 0.7194388777555111
+      }
+    },
+    "avg_query_ms": 845.8377755511025
+  },
+  "failures": [],
+  "elapsed_sec": 107.17
+}

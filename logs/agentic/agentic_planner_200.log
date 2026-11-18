@@ -1,0 +1,13 @@
+评测 planner | 200 题 | LLM deepseek-v4.1-flash-1017 | workers 8
+  50/200 ...
+  100/200 ...
+  150/200 ...
+  200/200 ...
+========================================================================
+  mode=planner  n=200  failures=0
+  EM        0.2400
+  F1        0.3481
+  evidence_recall  0.7363
+  avg_docs  23.6  avg_llm_calls 2.0  avg_ms 2528
+  总耗时 64.3s
+  结果: evaluation/results/agentic_planner_200

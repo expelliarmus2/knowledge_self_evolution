@@ -1,0 +1,5 @@
+旧向量缓存: 127098 条, dim=1024
+新 mapping: 127098 条
+命中复用 127098 / 需新编码 0
+triples: (127098, 1024) zero=0
+saved -> data/h2official/triple_vecs_ng2.npy

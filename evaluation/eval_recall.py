@@ -1,0 +1,269 @@
+"""recall@K 精度评测：测试集问题 vs 构建好的知识图谱。
+
+用法（项目根目录）：
+    python -m evaluation.eval_recall --processed data/processed_musique \
+        --test data/test/musique_dev.json --top-ks 5,10,15,20,30 --workers 8
+
+指标定义：
+  - doc_recall@K : 金标证据文档(paragraphs[].title)在 Top-K 检索 chunk 中的命中比例，
+                   = mean( |gold ∩ retrieved_topK| / |gold| )
+  - full_hit@K   : 问答级全证据命中率 = 金标文档**全部**出现在 Top-K 的比例
+  - answer_hit@K : 金标 answer（含 aliases）字符串出现在 Top-K chunk 文本中的比例（词面命中）
+  - coverage     : 金标文档在图内是否有 chunk 节点（受抽取失败影响 → recall 天然上限）
+
+注意：本批构建因 LLM 内容审核约 4918 个 chunk 抽取失败未入图（≈28% 语料文档缺失），
+      全量 recall 有上限；报告同时给出「金标全覆盖子集」的 recall，用于评估检索器本身。
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import re
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence, Set, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from graph.knowledge_graph import KnowledgeGraph  # noqa: E402
+from openie.embedder import build_embedder  # noqa: E402
+from retrieval.retriever import Retriever  # noqa: E402
+from utils.config import Config  # noqa: E402
+from utils.prompts import PromptManager  # noqa: E402
+from vectorstore.manager import VectorStoreManager  # noqa: E402
+
+DEFAULT_KS = [5, 10, 15, 20, 30]
+_DEDUP_SUFFIX = re.compile(r"#\d+$")
+_WS = re.compile(r"\s+")
+
+
+def norm_doc(doc_id: str) -> str:
+    """doc_id 归一：去掉构建时重复标题加的 #n 后缀（Lionel Messi#2 → Lionel Messi）。"""
+    return _DEDUP_SUFFIX.sub("", str(doc_id).strip()) if doc_id else ""
+
+
+def norm_text(s: str) -> str:
+    return _WS.sub(" ", str(s).lower()).strip()
+
+
+def load_test(path: Path, supporting_only: bool = False) -> List[dict]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        data = data.get("data") or data.get("questions") or []
+    out: List[dict] = []
+    for i, q in enumerate(data):
+        paragraphs = q.get("paragraphs") or []
+        if supporting_only:
+            # 标准 MuSiQue 指标：只用 is_supporting 段落（2-4 篇/题），其余是干扰段落
+            gold = [str(p.get("title", "")).strip() for p in paragraphs if p.get("title") and p.get("is_supporting")]
+        else:
+            gold = [str(p.get("title", "")).strip() for p in paragraphs if p.get("title")]
+        gold = list(dict.fromkeys(gold))  # supporting 可能同题重复（不同段落同标题），文档级去重
+        if not gold:
+            continue
+        out.append({
+            "idx": q.get("idx", q.get("id", i)),
+            "question": str(q.get("question", "")),
+            "gold": gold,
+            "answer": str(q.get("answer", "") or ""),
+            "answer_aliases": [str(a) for a in (q.get("answer_aliases") or []) if a],
+        })
+    return out
+
+
+def build_retriever(processed_dir: Path, cfg: Config, llm_filter: bool = False):
+    graph_path = processed_dir / "graph.pkl"
+    if not graph_path.exists():
+        sys.exit(f"图不存在: {graph_path}，请先运行 build")
+    graph = KnowledgeGraph.load(graph_path)
+    embedder = build_embedder(cfg)
+    prompts = PromptManager.from_config(cfg)
+    vdb = VectorStoreManager(cfg, embedder, processed_dir)
+    llm = None
+    if llm_filter:
+        from openie.llm_client import build_llm  # noqa: PLC0415
+        llm = build_llm(cfg)
+    retriever = Retriever(cfg, graph, vdb, embedder, llm, prompts, graph_path=graph_path)
+    return retriever, graph
+
+
+def graph_doc_ids(graph) -> Set[str]:
+    return {norm_doc(graph.g.nodes[c].get("doc_id", "")) for c in graph.chunks()}
+
+
+def search_one(retriever, q: dict, top_k: int) -> dict:
+    t0 = time.time()
+    result = retriever.search(q["question"], top_k=top_k)
+    return {
+        "idx": q["idx"],
+        "question": q["question"],
+        "gold": q["gold"],
+        "answer": q["answer"],
+        "aliases": q["answer_aliases"],
+        "chunks": [
+            {
+                "chunk_id": c.get("chunk_id", ""),
+                "doc_id": c.get("doc_id", ""),
+                "score": c.get("score", 0.0),
+                "rank": c.get("rank", 0),
+                "source": c.get("source", ""),
+                "text": c.get("text", ""),
+            }
+            for c in result.chunks
+        ],
+        "triples_total": len(result.triples),
+        "timing_total": result.timing.get("total", round(time.time() - t0, 4)),
+    }
+
+
+def compute_metrics(item: dict, ks: Sequence[int]) -> dict:
+    """从一次检索结果计算各 K 的 doc_recall / full_hit / answer_hit。"""
+    gold_set = set(item["gold"])
+    doc_ids = [norm_doc(c.get("doc_id", "")) for c in item["chunks"]]
+    texts = [c.get("text", "") for c in item["chunks"]]
+    cands = [a for a in ([item["answer"]] + list(item["aliases"])) if a and norm_text(a)]
+
+    out: Dict[int, dict] = {}
+    for K in ks:
+        retrieved = set(doc_ids[:K])
+        hit = sum(1 for g in item["gold"] if g in retrieved)
+        rec = hit / len(item["gold"]) if item["gold"] else 0.0
+        full = 1.0 if item["gold"] and gold_set <= retrieved else 0.0
+        ahit = 0.0
+        if cands:
+            top_texts = texts[:K]
+            for cand in cands:
+                nc = norm_text(cand)
+                if nc and any(nc in norm_text(t) for t in top_texts):
+                    ahit = 1.0
+                    break
+        out[K] = {"doc_recall": rec, "full_hit": full, "answer_hit": ahit}
+    return out
+
+
+def mean(vals: Sequence[float]) -> float:
+    return sum(vals) / len(vals) if vals else 0.0
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="recall@K 精度评测（MuSiQue 测试集 vs 知识图谱）")
+    ap.add_argument("--processed", type=str, default=None, help="知识库产物目录（默认 paths.processed_dir）")
+    ap.add_argument("--test", type=str, default="data/test/musique_dev.json", help="测试问题文件")
+    ap.add_argument("--top-ks", type=str, default=",".join(map(str, DEFAULT_KS)), help="K 列表，逗号分隔")
+    ap.add_argument("--workers", type=int, default=8, help="并行检索线程数")
+    ap.add_argument("--limit", type=int, default=None, help="只评测前 N 条（抽样用）")
+    ap.add_argument("--llm-filter", action="store_true", help="启用 LLM 三元组相关性过滤（默认关闭）")
+    ap.add_argument("--supporting-only", action="store_true",
+                    help="金标只用 is_supporting 段落（标准 MuSiQue 指标，2-4 篇/题）；默认用全部 20 篇")
+    ap.add_argument("--out", type=str, default="evaluation/results", help="结果输出目录")
+    args = ap.parse_args()
+
+    ks = [int(k) for k in args.top_ks.replace("；", ",").split(",") if k.strip()]
+    ks = sorted(set(ks)) or DEFAULT_KS
+
+    cfg = Config.load()
+    processed_dir = Path(args.processed) if args.processed else cfg.path("paths.processed_dir", "data/processed")
+    test_path = Path(args.test).resolve() if not Path(args.test).is_absolute() else Path(args.test)
+
+    retriever, graph = build_retriever(Path(processed_dir), cfg, llm_filter=args.llm_filter)
+    questions = load_test(test_path, supporting_only=args.supporting_only)
+    if args.limit:
+        questions = questions[: args.limit]
+    if not questions:
+        sys.exit("测试集为空")
+
+    known = graph_doc_ids(graph)
+    n_all = len(questions)
+    n_fully = sum(1 for q in questions if all(g in known for g in q["gold"]))
+    n_none = sum(1 for q in questions if not any(g in known for g in q["gold"]))
+
+    top_k = max(ks)
+    t_start = time.time()
+    items: List[dict] = []
+    failures: List[Tuple[object, str]] = []
+    with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
+        futures = {pool.submit(search_one, retriever, q, top_k): q for q in questions}
+        n_done = 0
+        for fut in as_completed(futures):
+            q = futures[fut]
+            n_done += 1
+            try:
+                items.append(fut.result())
+            except Exception as err:  # noqa: BLE001
+                failures.append((q["idx"], str(err)))
+            sys.stdout.write(f"\r检索 {n_done}/{n_all} ...")
+            sys.stdout.flush()
+    print(f"\r检索完成 {n_done}/{n_all}（失败 {len(failures)}，耗时 {time.time() - t_start:.1f}s）")
+
+    for item in items:
+        item["metrics"] = compute_metrics(item, ks)
+        item["n_gold_in_graph"] = sum(1 for g in item["gold"] if g in known)
+
+    def agg(subset: List[dict]) -> dict:
+        res: Dict[int, dict] = {}
+        for K in ks:
+            rec = mean([it["metrics"][K]["doc_recall"] for it in subset])
+            full = mean([it["metrics"][K]["full_hit"] for it in subset])
+            ans = mean([it["metrics"][K]["answer_hit"] for it in subset])
+            res[K] = {"doc_recall": rec, "full_hit": full, "answer_hit": ans}
+        avg_ms = mean([it["timing_total"] for it in subset]) * 1000
+        return {"n": len(subset), "metrics": res, "avg_query_ms": avg_ms}
+
+    overall = agg(items)
+    covered = agg([it for it in items if len(it["gold"]) and it["n_gold_in_graph"] == len(it["gold"])])
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stem = out_dir / f"recall_{tag}"
+    report = {
+        "config": {"processed": str(processed_dir), "test": str(test_path), "top_ks": ks,
+                   "workers": args.workers, "llm_filter": args.llm_filter, "limit": args.limit,
+                   "supporting_only": args.supporting_only},
+        "coverage": {"questions": n_all, "fully_covered": n_fully, "no_gold_in_graph": n_none,
+                     "graph_docs": len(known)},
+        "overall": overall,
+        "fully_covered_subset": covered,
+        "failures": [{"idx": i, "error": e} for i, e in failures],
+        "elapsed_sec": round(time.time() - t_start, 2),
+    }
+    (out_dir / f"recall_{tag}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    with open(stem.with_suffix(".csv"), "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f)
+        w.writerow(["K", "doc_recall(all)", "full_hit(all)", "answer_hit(all)",
+                    "doc_recall(covered)", "full_hit(covered)", "answer_hit(covered)"])
+        for K in ks:
+            a, c = overall["metrics"][K], covered["metrics"][K]
+            w.writerow([K, f"{a['doc_recall']:.4f}", f"{a['full_hit']:.4f}", f"{a['answer_hit']:.4f}",
+                        f"{c['doc_recall']:.4f}", f"{c['full_hit']:.4f}", f"{c['answer_hit']:.4f}"])
+
+    with open(stem.with_suffix(".detail.jsonl"), "w", encoding="utf-8") as f:
+        for it in items:
+            f.write(json.dumps({
+                "idx": it["idx"], "question": it["question"],
+                "gold": it["gold"], "answer": it["answer"],
+                "n_gold_in_graph": it["n_gold_in_graph"],
+                "retrieved_top": [{"doc_id": c["doc_id"], "score": c["score"], "source": c["source"]}
+                                  for c in it["chunks"][: max(ks)]],
+                "metrics": {str(K): it["metrics"][K] for K in ks},
+                "timing_total": it["timing_total"],
+            }, ensure_ascii=False) + "\n")
+
+    # ---- 控制台报表 ----
+    print(f"\n覆盖度: 问题 {n_all} | 金标全覆盖 {n_fully} | 金标完全不在图 {n_none} | 图内文档 {len(known)}")
+    print(f"{'K':>4} | {'doc_recall':>10} {'full_hit':>8} {'answer_hit':>10} | {'doc_recall*':>10} {'full_hit*':>8} {'answer_hit*':>10}")
+    print("-" * 78)
+    for K in ks:
+        a, c = overall["metrics"][K], covered["metrics"][K]
+        print(f"{K:>4} | {a['doc_recall']:>10.4f} {a['full_hit']:>8.4f} {a['answer_hit']:>10.4f} | "
+              f"{c['doc_recall']:>10.4f} {c['full_hit']:>8.4f} {c['answer_hit']:>10.4f}")
+    print(f"平均单条耗时: {overall['avg_query_ms']:.0f} ms (n={overall['n']})  结果: {out_dir}/recall_{tag}.*")
+
+
+if __name__ == "__main__":
+    main()

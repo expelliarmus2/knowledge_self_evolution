@@ -1,0 +1,27 @@
+100/1000 ...200/1000 ...300/1000 ...400/1000 ...500/1000 ...600/1000 ...700/1000 ...800/1000 ...900/1000 ...1000/1000 ...分解完成 1000 题, 耗时 144.5s
+
+=== 金标文档分类（按文档计数）===
+  top30         :   1562 (60.1%)
+  pool_below30  :    301 (11.6%)
+  not_reach     :    738 (28.4%)
+  total gold docs in graph: 2601
+
+pool_below30 的最低排名(排在最前的金标chunk): median=0 p10=0 p25=0 p75=0 max=0.4316
+
+=== not_reach 二级分解（抽样 40 题）===
+  uncapped_reachable(截断问题)                  : 52  (95%)
+  genuine_disconnect(抽取/种子问题)               : 3  (5%)
+
+=== not_reach 样例（3 条）===
+  Q[2hop__511454_120259]: When was Lady Godiva's birthplace abolished?
+     未达金标: ['Mercia']
+     种子chunk(98): [('Lordship of Frisia::chunk0', 'both'), ('Slavery Abolition Act 1833::chunk0', 'vector'), ('Greece#2::chunk1', 'vector'), ('Genoveva Torres Morales::chunk0', 'vector')]
+     hop chunks(0): []
+  Q[4hop1__94201_642284_131926_89261]: Where does the body of water by the city where the Southeast Library designer died empty i
+     未达金标: ['Minneapolis', 'Riverside Plaza']
+     种子chunk(90): [('Colorado River (Texas)::chunk0', 'both'), ('Gulf of Mexico::chunk0', 'both'), ('Mexico Beach, Florida::chunk0', 'vector'), ('San Francisco::chunk1', 'both')]
+     hop chunks(0): []
+  Q[4hop1__152562_5274_458768_33633]: When did the explorer reach the city where the headquarters of the only group larger than 
+     未达金标: ['Santa Monica, California', 'Sony Music', 'The Right Stuff Records']
+     种子chunk(97): [('Vilaiyaadu Mankatha::chunk0', 'both'), ('Trowulan::chunk1', 'vector'), ('Indian Rebellion of 1857#4::chunk0', 'vector'), ('Indus Valley Civilisation::chunk0', 'vector')]
+     hop chunks(0): []

@@ -1,0 +1,161 @@
+# =====================================================================
+# 知识库自演进（Knowledge Base Self-Evolution）全局配置
+# 说明：
+#   - 优先级：环境变量（前缀 KB_，双下划线表示层级，如 KB_EMBEDDING__MODEL）
+#             > 本文件 > 代码内置默认值
+#   - 相对路径一律相对项目根目录解析
+# =====================================================================
+
+project:
+  name: knowledge_self_evolution
+  language: english            # chinese | english，决定 prompt 模板语言后缀（ner_zh.txt / ner_en.txt）
+
+paths:
+  raw_dir: data/raw            # 原始文档（.jsonl / .json MuSiQue corpus / .txt / .md）
+  processed_dir: data/processed_musique # MuSiQue 知识库产物（中文演示库在 data/processed_demo_cn）
+  prompts_dir: prompts         # prompt 模板目录
+  logs_dir: logs
+  # 数据位置可被三级覆盖（优先级从高到低）：
+  #   1) CLI：build --input/--output；search/evolve/serve --processed
+  #   2) 环境变量：KB_PATHS__RAW_DIR / KB_PATHS__PROCESSED_DIR /
+  #      KB_PATHS__PROMPTS_DIR / KB_PATHS__LOGS_DIR
+  #   3) 独立 yaml：--config config/my_domain.yaml（在 default 之上深合并）
+  # 说明：processed_dir 即一套知识库；换目录 = 换知识库，可多库并存。
+
+# ------------------------- Embedding 模型 -------------------------
+embedding:
+  provider: openai             # openai | mock（离线演示/测试用）
+  model: BAAI/bge-m3
+  base_url: http://localhost:8800/v1
+  api_key: dummy
+  dim: 1024
+  normalize: true              # L2 归一化，配合 IndexFlatIP 即为 cosine
+  batch_size: 32               # 单次请求批量（Embedding 调度优化：批量化）
+  max_workers: 8               # 并发请求数（Embedding 调度优化：有界并发）
+  max_retries: 3
+  retry_backoff: 2.0           # 指数退避基数（秒）
+  timeout: 60
+  cache_enable: false          # 磁盘向量缓存（换 embedding 模型前请清空）
+  cache_file: data/processed/embedding_cache.jsonl
+
+# ------------------------- LLM 模型 -------------------------
+llm:
+  provider: openai             # openai | mock（离线演示/测试用）
+  model: deepseek-v4.1-flash-1017
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  api_key: sk-REPLACE_WITH_YOUR_KEY
+  temperature: 0.1
+  max_tokens: 4096
+  timeout: 120
+  max_retries: 3
+  retry_backoff: 2.0
+  max_workers: 32              # OpenIE 抽取的 LLM 并行数（流式并行优化）
+  enable_thinking: false       # 关闭思考模式（deepseek/qwen 思考类模型：抽取任务无需长思考，快 10x、省 token）
+
+# curl --noproxy dashscope.aliyuncs.com \
+#   -X POST "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" \
+#   -H "Authorization: Bearer ${DASHSCOPE_API_KEY}" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "model": "qwen3.8-max",
+#     "messages": [
+#       {"role": "user", "content": "你好"}
+#     ]
+#   }'    sk-REPLACE_WITH_YOUR_KEY
+
+# ------------------------- 文档切块 -------------------------
+chunking:
+  chunk_size: 512              # 字符数
+  chunk_overlap: 64
+  separators: ["\n\n", "\n", "。", "！", "？", ".", "!", "?", "；", ";"]
+
+# ------------------------- OpenIE（HippoRAG2 两步式） -------------------------
+openie:
+  extract_mode: one_step      # 抽取模式：one_step=单次抽取（当前评测用）| two_step=两步式 NER→RE
+                              #            one_step=单次抽取（huaxi_poc 风格，LLM 调用减半，性能优先）
+  require_entity_anchor: true  # 每个三元组至少锚定实体列表中的一个实体，否则丢弃（仅 two_step 生效）
+  resolve_pronouns: true       # 代词解析为具体实体名（仅 two_step 生效；one_step 由 prompt 约束）
+  max_entities: 64             # 单 chunk 实体数上限
+  batch_size: 16               # 流式构建的批大小（每完成一批即增量写图）
+
+prompts:
+  ner: ner                     # 模板名 → prompts/ner_zh.txt / ner_en.txt（回退 ner.txt）
+  triple_extraction: triple_extraction
+  openie_one_step: openie_one_step   # one_step 模式模板（huaxi <|> ## <|COMPLETE|> 协议）
+  retrieval_filter: retrieval_filter
+
+# ------------------------- 知识图谱 -------------------------
+graph:
+  case_insensitive_entities: false # 英文实体名大小写归一（中文无影响）
+  min_entity_freq: 1            # 出现 chunk 数低于该值的实体在建图时丢弃（1=保留全部）
+  synonym_enable: false         # 基于 embedding 相似度连 synonym 边（huaxi 思路）
+  synonym_threshold: 0.85
+  max_changelog: 1000           # 图操作日志上限（环形截断）
+
+# ------------------------- 向量库 -------------------------
+vectorstore:
+  triple_text_template: "{head}，{relation}，{tail}"  # 三元组向量化文本模板
+  stores: [entities, triples, chunks]
+
+# ------------------------- 检索（Green-ChunkHop 思路） -------------------------
+retrieval:
+  chunkhop_mode: dual_seed      # dual_seed=双路入图+重要实体+在线CHUNK_HOP边+真PPR（对齐 Green-ChunkHop main）| legacy=旧离线邻接+personal
+  entity_top_k: 30              # dual_seed：重要实体选取上限（参考实现 entity_top_k=30）
+  entity_seed_weight: 0.5       # dual_seed：实体综合分 = w×种子分 + (1-w)×chunk传导分
+  dual_hops: 2                  # dual_seed：在线 CHUNK_HOP 逐跳扩散跳数
+  dual_hop_width: 50            # dual_seed：每跳最多新增 chunk（剪枝）
+  dual_min_seed: 0.0            # dual_seed：种子 chunk 最低分
+  dual_score_blend: 0.3        # dual_seed：PPR分数×blend + 种子分×(1-blend)（0=种子直排 1=纯PPR；全量1000题0.3最优）
+  triple_seed: 10               # 三元组路召回数
+  entity_seed: 10               # 实体路召回数
+  vector_seed: 20               # chunk 向量路召回数
+  hops: 2                       # CHUNK_HOP 扩散跳数
+  max_hop_width: 50             # 每跳最多新增 chunk 数（剪枝）
+  hop_chunk_boost: 1e-3        # hop chunk 个人化分数系数（weight×boost×decay；1e-3=仅兜底不参与排序）
+  hop_decay: 0.5               # hop 边权/个性化随跳数衰减（0.5^hop，抑制深层噪声枢纽）
+  min_shared_entities: 1        # chunk 间共享实体数下限
+  min_hop_weight: 0.05          # hop 边权下限
+  min_hop_intersection: 1       # hop 边共享实体与查询实体交集下限（0=关闭）
+  locate_max_chunks: 80        # 实体定位(located)种子 chunk 上限（按分截断，防泛化实体冲爆）
+  use_triple_expand: true       # 三元组 n 跳扩展
+  triple_expand_hops: 2
+  triple_expand_decay: 0.5      # 每跳分数衰减
+  ppr_alpha: 0.6                # PPR damping（dual_seed 用 0.6，对齐参考实现 config.yaml）
+  ppr_mode: personal            #
+  skip_hop: auto                # auto=personal 模式下跳过 CHUNK_HOP（hop 权重不足以进 Top-K，省 90% 耗时） pagerank=图扩散排序 | personal=仅种子分排序（防枢纽噪声）
+  ppr_max_iter: 50
+  final_top_k: 10               # 最终返回 chunk 数
+  min_similarity: 0.0           # 向量召回相似度下限
+  llm_filter_enable: false       # LLM 对候选三元组做相关性过滤（HippoRAG2 filter）
+  llm_filter_max_facts: 8       # 送入 LLM 过滤的候选三元组上限
+  subgraph_mode: trace          # 检索子图模式：trace=溯源子图（规模可控，chunkhop M3+ 方案）| ppr=PPR 展开全子图
+  trace_max_entities: 30       # 溯源子图实体节点上限（chunk 节点数 = final_top_k）
+  trace_seed_weight: 0.5       # 溯源实体排序权重：seed三元组分 vs Top-K chunk 聚合分
+
+# ------------------------- Agentic Search（IRCoT / Planner） -------------------------
+agentic:
+  mode: ircot                  # ircot=迭代CoT检索（逐步推理句检索）| planner=分解子问题并行检索
+  max_steps: 6                 # IRCoT 最大轮数
+  min_steps: 1                 # IRCoT 最少轮数（之前不早停）
+  top_k_per_step: 5            # IRCoT 每步检索 top-k chunk
+  planner_top_k: 10            # Planner 每个子问题检索 top-k
+  planner_workers: 4           # Planner 子问题并行数
+  evidence_max_docs: 32        # 证据池文档上限（LLM 上下文成本）
+  evidence_max_chars: 6000     # 证据渲染字符上限
+  include_triples: true        # 证据中附带检索命中三元组（图证据，区别于纯段落）
+  max_triples: 12
+
+# ------------------------- 演进（EvoGraph-R1 / RSI 对接预留） -------------------------
+evolution:
+  enabled: true
+  strategies: []                # 演进策略模块路径占位，如 ["evograph_r1.strategy:MyStrategy"]
+  auto_sync_vectorstore: true   # 图操作后自动增量同步向量库
+
+# ------------------------- Web 可视化 -------------------------
+web:
+  host: 0.0.0.0
+  port: 5570
+  graph_node_limit: 500         # 全图渲染节点上限
+
+logging:
+  level: INFO

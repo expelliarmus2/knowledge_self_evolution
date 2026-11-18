@@ -1,0 +1,5 @@
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 85781.61it/s]
+passages: 11647
+triples: 127098
+  passages: 0/11647 (1s)
+passages: (11647, 1024) -> passage_vecs.npy

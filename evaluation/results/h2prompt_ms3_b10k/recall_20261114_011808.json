@@ -1,0 +1,87 @@
+{
+  "config": {
+    "processed": "data/processed_musique_h2prompt_b10k_ms3",
+    "test": "/mnt/e/yf/knowledge_self_evolution/data/test/musique_dev.json",
+    "top_ks": [
+      5,
+      10,
+      15,
+      20,
+      30
+    ],
+    "workers": 8,
+    "llm_filter": false,
+    "limit": 1000,
+    "supporting_only": true
+  },
+  "coverage": {
+    "questions": 1000,
+    "fully_covered": 998,
+    "no_gold_in_graph": 2,
+    "graph_docs": 9830
+  },
+  "overall": {
+    "n": 1000,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.56725,
+        "full_hit": 0.239,
+        "answer_hit": 0.453
+      },
+      "10": {
+        "doc_recall": 0.6561666666666663,
+        "full_hit": 0.349,
+        "answer_hit": 0.582
+      },
+      "15": {
+        "doc_recall": 0.6844166666666663,
+        "full_hit": 0.382,
+        "answer_hit": 0.636
+      },
+      "20": {
+        "doc_recall": 0.702333333333333,
+        "full_hit": 0.401,
+        "answer_hit": 0.674
+      },
+      "30": {
+        "doc_recall": 0.7551666666666658,
+        "full_hit": 0.483,
+        "answer_hit": 0.718
+      }
+    },
+    "avg_query_ms": 815.3064999999999
+  },
+  "fully_covered_subset": {
+    "n": 998,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.5683867735470942,
+        "full_hit": 0.23947895791583165,
+        "answer_hit": 0.45390781563126253
+      },
+      "10": {
+        "doc_recall": 0.6574816299265194,
+        "full_hit": 0.3496993987975952,
+        "answer_hit": 0.5831663326653307
+      },
+      "15": {
+        "doc_recall": 0.6857882431529723,
+        "full_hit": 0.38276553106212424,
+        "answer_hit": 0.6372745490981964
+      },
+      "20": {
+        "doc_recall": 0.7037408149632596,
+        "full_hit": 0.40180360721442887,
+        "answer_hit": 0.6753507014028056
+      },
+      "30": {
+        "doc_recall": 0.7566800267201059,
+        "full_hit": 0.48396793587174347,
+        "answer_hit": 0.7194388777555111
+      }
+    },
+    "avg_query_ms": 815.9838677354709
+  },
+  "failures": [],
+  "elapsed_sec": 103.27
+}

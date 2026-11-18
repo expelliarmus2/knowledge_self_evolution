@@ -1,0 +1,18 @@
+{
+  "mode": "planner",
+  "n": 200,
+  "failures": 0,
+  "em": 0.24,
+  "f1": 0.34811649999999994,
+  "evidence_recall": 0.7362535000000001,
+  "avg_docs": 23.65,
+  "avg_llm_calls": 2.0,
+  "avg_ms": 2527.612500000001,
+  "elapsed_sec": 64.3,
+  "config": {
+    "max_steps": 6,
+    "top_k_per_step": 5,
+    "evidence_max_docs": 32,
+    "include_triples": true
+  }
+}

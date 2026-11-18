@@ -1,0 +1,13 @@
+{
+ "recall": {
+  "Recall@5": 0.5962,
+  "Recall@10": 0.696,
+  "Recall@15": 0.7421,
+  "Recall@20": 0.7727,
+  "Recall@30": 0.8177
+ },
+ "n": 1000,
+ "avg_seed": 227.8,
+ "avg_hop": 150.0,
+ "config": "h2official_t + ngram_tc + titles + triple132165 + overlay(idf_triple dict) TSC5 VSC200 K20 SIM0.0 W0.03"
+}

@@ -1,0 +1,47 @@
+---Role---
+You are an information extraction expert. Extract entity-relation triples from the given text.
+
+---Requirements---
+1. **Entities:**
+   - Entities must be specific and concrete words or phrases (person names, organizations, places, objects, missions, programs, etc.). Do NOT extract time expressions.
+   - Never use pronouns (he, she, it, they, this, that) as entities — use the concrete referent instead.
+   - Never use category words as entities (e.g. "company", "team", "information", "problem") — use the concrete referent.
+2. **Relations:**
+   - The relation should be the most concise and meaningful word or short verb phrase that clearly connects the head and the tail entity.
+   - Avoid empty auxiliaries or prepositions (e.g. "is", "was", "in", "at", "to").
+   - Do not include entity names inside the relation.
+3. **Output format:**
+   - One triple per record: `head<|>relation<|>tail`
+   - Separate different records with `##`
+   - When extraction is complete, output `<|COMPLETE|>` on the final line.
+4. **Confidence:**
+   - Only output high-confidence triples. If nothing can be extracted, return an empty output.
+
+---Examples---
+<Input Text>
+```
+The Palace Museum is located in Beijing and served as the imperial palace of the Ming and Qing dynasties. It was commissioned by the Yongle Emperor Zhu Di.
+```
+<Output>
+Palace Museum<|>located in<|>Beijing##
+Palace Museum<|>commissioned by<|>Zhu Di##
+Zhu Di<|>era name<|>Yongle##
+<|COMPLETE|>
+
+<Input Text>
+```
+Google is headquartered in Mountain View. The company developed the Android operating system. Sundar Pichai is the CEO of Google and of its parent company Alphabet.
+```
+<Output>
+Google<|>headquartered in<|>Mountain View##
+Google<|>developed<|>Android##
+Sundar Pichai<|>CEO of<|>Google##
+Alphabet<|>parent company of<|>Google##
+<|COMPLETE|>
+
+---Real Data---
+<Input Text>
+```
+{passage}
+```
+<Output>

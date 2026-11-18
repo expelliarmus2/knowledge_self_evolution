@@ -1,0 +1,13 @@
+评测 ircot | 200 题 | LLM deepseek-v4.1-flash-1017 | workers 8
+  50/200 ...
+  100/200 ...
+  150/200 ...
+  200/200 ...
+========================================================================
+  mode=ircot  n=200  failures=0
+  EM        0.3350
+  F1        0.4548
+  evidence_recall  0.8183
+  avg_docs  10.5  avg_llm_calls 5.0  avg_ms 5691
+  总耗时 146.8s
+  结果: evaluation/results/agentic_ircot_200

@@ -1,0 +1,5 @@
+2026-11-09 17:01:05,764 - INFO - 已注册演进策略: noop
+2026-11-09 17:01:05,770 - INFO - 文档 5 篇 → chunk 5 个
+2026-11-09 17:01:05,784 - INFO - 构图完成: entities=80 chunks=5 triples=130
+2026-11-09 17:01:05,790 - INFO - 向量库同步: {'entities': {'added': 80, 'removed': 0, 'total': 80}, 'triples': {'added': 130, 'removed': 0, 'total': 130}, 'chunks': {'added': 5, 'removed': 0, 'total': 5}}
+2026-11-09 17:01:05,839 - INFO - 构建完成: {"docs": 5, "chunks": 5, "openie_results": 5, "triples_extracted": 130, "artifacts": {"entities": 80, "triples": 130, "chunks": 5}, "vdb": {"entities": {"added": 80, "removed": 0, "total": 80}, "triples": {"added": 130, "removed": 0, "total": 130}, "chunks": {"added": 5, "removed": 0, "total": 5}}, "graph": {"version": 215, "entities": 80, "chunks": 5, "triples": 130, "text_conclude_edges": 83, "changelog_len": 215}, "graph_export": {"nodes": 85, "edges": 213}, "elapsed_sec": 0.07, "incremental": false}

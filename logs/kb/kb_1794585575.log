@@ -1,0 +1,6 @@
+2026-11-13 23:59:35,396 - INFO - 加载已有图: {'version': 157, 'entities': 76, 'chunks': 5, 'triples': 75, 'text_conclude_edges': 90, 'changelog_len': 157}
+2026-11-13 23:59:35,462 - INFO - 已注册演进策略: noop
+2026-11-13 23:59:35,522 - INFO - 文档 5 篇 → chunk 5 个
+2026-11-13 23:59:38,746 - INFO - 构图完成: entities=81 chunks=5 triples=70
+2026-11-13 23:59:40,084 - INFO - 向量库同步: {'entities': {'added': 81, 'removed': 0, 'total': 81}, 'triples': {'added': 95, 'removed': 0, 'total': 95}, 'chunks': {'added': 5, 'removed': 0, 'total': 5}}
+2026-11-13 23:59:40,134 - INFO - 构建完成: {"docs": 5, "chunks": 5, "openie_results": 5, "triples_extracted": 70, "artifacts": {"entities": 81, "triples": 95, "chunks": 5}, "vdb": {"entities": {"added": 81, "removed": 0, "total": 81}, "triples": {"added": 95, "removed": 0, "total": 95}, "chunks": {"added": 5, "removed": 0, "total": 5}}, "graph": {"version": 232, "entities": 81, "chunks": 5, "triples": 95, "text_conclude_edges": 95, "changelog_len": 232}, "graph_export": {"nodes": 86, "edges": 190}, "elapsed_sec": 4.67, "incremental": false}

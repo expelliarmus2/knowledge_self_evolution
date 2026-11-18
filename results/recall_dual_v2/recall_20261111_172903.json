@@ -1,0 +1,87 @@
+{
+  "config": {
+    "processed": "data/processed_musique_onestep",
+    "test": "/mnt/e/yf/knowledge_self_evolution/data/test/musique_dev.json",
+    "top_ks": [
+      5,
+      10,
+      15,
+      20,
+      30
+    ],
+    "workers": 8,
+    "llm_filter": false,
+    "limit": 100,
+    "supporting_only": true
+  },
+  "coverage": {
+    "questions": 100,
+    "fully_covered": 100,
+    "no_gold_in_graph": 0,
+    "graph_docs": 9843
+  },
+  "overall": {
+    "n": 100,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.46916666666666673,
+        "full_hit": 0.15,
+        "answer_hit": 0.29
+      },
+      "10": {
+        "doc_recall": 0.5625000000000001,
+        "full_hit": 0.25,
+        "answer_hit": 0.38
+      },
+      "15": {
+        "doc_recall": 0.6308333333333334,
+        "full_hit": 0.3,
+        "answer_hit": 0.43
+      },
+      "20": {
+        "doc_recall": 0.6691666666666667,
+        "full_hit": 0.35,
+        "answer_hit": 0.48
+      },
+      "30": {
+        "doc_recall": 0.7216666666666669,
+        "full_hit": 0.47,
+        "answer_hit": 0.55
+      }
+    },
+    "avg_query_ms": 624.598
+  },
+  "fully_covered_subset": {
+    "n": 100,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.46916666666666673,
+        "full_hit": 0.15,
+        "answer_hit": 0.29
+      },
+      "10": {
+        "doc_recall": 0.5625000000000001,
+        "full_hit": 0.25,
+        "answer_hit": 0.38
+      },
+      "15": {
+        "doc_recall": 0.6308333333333334,
+        "full_hit": 0.3,
+        "answer_hit": 0.43
+      },
+      "20": {
+        "doc_recall": 0.6691666666666667,
+        "full_hit": 0.35,
+        "answer_hit": 0.48
+      },
+      "30": {
+        "doc_recall": 0.7216666666666669,
+        "full_hit": 0.47,
+        "answer_hit": 0.55
+      }
+    },
+    "avg_query_ms": 624.598
+  },
+  "failures": [],
+  "elapsed_sec": 8.04
+}

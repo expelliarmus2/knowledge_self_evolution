@@ -1,0 +1,30 @@
+{
+  "cfg": {
+    "retrieval": {
+      "vector_seed": 50,
+      "ppr_alpha": 0.8,
+      "dual_hops": 3,
+      "triple_seed": 10,
+      "entity_seed": 10,
+      "dual_score_blend": 0.3
+    }
+  },
+  "n": 1000,
+  "metrics": {
+    "5": {
+      "doc_recall": 0.5696666666666672
+    },
+    "10": {
+      "doc_recall": 0.6576666666666666
+    },
+    "15": {
+      "doc_recall": 0.6959999999999992
+    },
+    "20": {
+      "doc_recall": 0.7187499999999987
+    },
+    "30": {
+      "doc_recall": 0.7442499999999982
+    }
+  }
+}

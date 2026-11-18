@@ -1,0 +1,12 @@
+2026-11-09 17:52:54,295 - INFO - 加载已有图: {'version': 215, 'entities': 80, 'chunks': 5, 'triples': 130, 'text_conclude_edges': 83, 'changelog_len': 215}
+2026-11-09 17:52:54,344 - INFO - 已注册演进策略: noop
+2026-11-09 17:52:54,351 - INFO - 增量模式跳过已构建文档: doc_kg_001
+2026-11-09 17:52:54,351 - INFO - 增量模式跳过已构建文档: doc_star_001
+2026-11-09 17:52:54,351 - INFO - 增量模式跳过已构建文档: doc_star_002
+2026-11-09 17:52:54,352 - INFO - 增量模式跳过已构建文档: doc_evo_001
+2026-11-09 17:52:54,352 - INFO - 增量模式跳过已构建文档: doc_rag_001
+2026-11-09 17:52:54,353 - INFO - 文档 5 篇 → chunk 0 个
+2026-11-09 17:52:54,353 - WARNING - 没有需要构建的新 chunk（全部已增量构建？）
+2026-11-09 17:52:54,354 - INFO - 构图完成: entities=80 chunks=5 triples=0
+2026-11-09 17:52:54,355 - INFO - 向量库同步: {'entities': {'added': 0, 'removed': 0, 'total': 80}, 'triples': {'added': 0, 'removed': 0, 'total': 130}, 'chunks': {'added': 0, 'removed': 0, 'total': 5}}
+2026-11-09 17:52:54,404 - INFO - 构建完成: {"docs": 5, "chunks": 0, "openie_results": 0, "triples_extracted": 0, "artifacts": {"entities": 80, "triples": 130, "chunks": 5}, "vdb": {"entities": {"added": 0, "removed": 0, "total": 80}, "triples": {"added": 0, "removed": 0, "total": 130}, "chunks": {"added": 0, "removed": 0, "total": 5}}, "graph": {"version": 215, "entities": 80, "chunks": 5, "triples": 130, "text_conclude_edges": 83, "changelog_len": 215}, "graph_export": {"nodes": 85, "edges": 213}, "elapsed_sec": 0.06, "incremental": true}

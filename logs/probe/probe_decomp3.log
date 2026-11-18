@@ -1,0 +1,27 @@
+100/1000 ...200/1000 ...300/1000 ...400/1000 ...500/1000 ...600/1000 ...700/1000 ...800/1000 ...900/1000 ...1000/1000 ...分解完成 1000 题, 耗时 120.3s
+
+=== 金标文档分类（按文档计数）===
+  top30         :   1577 (60.6%)
+  pool_below30  :    283 (10.9%)
+  not_reach     :    741 (28.5%)
+  total gold docs in graph: 2601
+
+pool_below30 的最低排名(排在最前的金标chunk): median=0 p10=0 p25=0 p75=0 max=0.1305
+
+=== not_reach 二级分解（抽样 40 题）===
+  uncapped_reachable(截断问题)                  : 52  (95%)
+  genuine_disconnect(抽取/种子问题)               : 3  (5%)
+
+=== not_reach 样例（3 条）===
+  Q[2hop__511454_120259]: When was Lady Godiva's birthplace abolished?
+     未达金标: ['Mercia']
+     种子chunk(98): [('Lordship of Frisia::chunk0', 'both'), ('Slavery Abolition Act 1833::chunk0', 'vector'), ('Greece#2::chunk1', 'vector'), ('Genoveva Torres Morales::chunk0', 'vector')]
+     hop chunks(0): []
+  Q[4hop1__94201_642284_131926_89261]: Where does the body of water by the city where the Southeast Library designer died empty i
+     未达金标: ['Minneapolis', 'Riverside Plaza']
+     种子chunk(90): [('Colorado River (Texas)::chunk0', 'both'), ('Gulf of Mexico::chunk0', 'both'), ('Mexico Beach, Florida::chunk0', 'vector'), ('San Francisco::chunk1', 'both')]
+     hop chunks(0): []
+  Q[4hop2__71753_648517_70784_79935]: When was the region immediately north of the region where Israel is located and the locati
+     未达金标: ['History of Saudi Arabia']
+     种子chunk(92): [('Battle of Qurah and Umm al Maradim::chunk0', 'both'), ('Battle of Uhud::chunk0', 'vector'), ('1948 Arab–Israeli War::chunk1', 'vector'), ('Israel::chunk0', 'both')]
+     hop chunks(0): []

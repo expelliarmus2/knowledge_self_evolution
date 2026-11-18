@@ -1,0 +1,14 @@
+You are a triple relevance filter in a high-precision question answering system. Decide whether each candidate triple helps answer the given query.
+Respond with a JSON object only, in the format {"fact": [["subject", "predicate", "object"], ...]}.
+
+Requirements:
+- Keep only triples that are semantically relevant to the query and can serve as direct or multi-hop evidence.
+- Keep at most {max_facts} triples, ordered from most to least relevant.
+- If no triple is relevant, output {"fact": []}.
+- Do not output anything extra.
+
+Question:
+{question}
+
+Candidate triples (JSON array):
+{candidate_facts_json}

@@ -1,0 +1,86 @@
+{
+  "config": {
+    "processed": "data/processed_musique",
+    "test": "/mnt/e/yf/knowledge_self_evolution/data/test/musique_dev.json",
+    "top_ks": [
+      5,
+      10,
+      15,
+      20,
+      30
+    ],
+    "workers": 3,
+    "llm_filter": false,
+    "limit": 3
+  },
+  "coverage": {
+    "questions": 3,
+    "fully_covered": 3,
+    "no_gold_in_graph": 0,
+    "graph_docs": 7092
+  },
+  "overall": {
+    "n": 3,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.0,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "10": {
+        "doc_recall": 0.0,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "15": {
+        "doc_recall": 0.049999999999999996,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "20": {
+        "doc_recall": 0.09999999999999999,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "30": {
+        "doc_recall": 0.09999999999999999,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      }
+    },
+    "avg_query_ms": 35240.4
+  },
+  "fully_covered_subset": {
+    "n": 3,
+    "metrics": {
+      "5": {
+        "doc_recall": 0.0,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "10": {
+        "doc_recall": 0.0,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "15": {
+        "doc_recall": 0.049999999999999996,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "20": {
+        "doc_recall": 0.09999999999999999,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      },
+      "30": {
+        "doc_recall": 0.09999999999999999,
+        "full_hit": 0.0,
+        "answer_hit": 0.0
+      }
+    },
+    "avg_query_ms": 35240.4
+  },
+  "failures": [],
+  "elapsed_sec": 39.91
+}

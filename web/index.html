@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识库自演进 · 子图可视化</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/lib/vis-network.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand">知识库自演进 <span class="sub">HippoRAG2 构建 · ChunkHop 检索 · 演进预留</span></div>
+  <div class="actions">
+    <input id="query-input" type="text" placeholder="输入查询，例如：星辰科技的创始人是谁？" />
+    <label class="inline">Top-K <input id="topk-input" type="number" value="10" min="1" max="50" /></label>
+    <label class="inline">Hops <input id="hops-input" type="number" value="2" min="0" max="4" /></label>
+    <label class="inline">子图
+      <select id="subgraph-mode" title="trace=溯源子图（只含 Top-K chunk + 实体Top-N，规模可控）；ppr=PPR展开全子图">
+        <option value="trace">溯源</option>
+        <option value="ppr">PPR</option>
+      </select>
+    </label>
+    <label class="inline">实体上限 <input id="trace-entities" type="number" value="30" min="5" max="120" /></label>
+    <button id="btn-search" class="primary">检索子图</button>
+    <button id="btn-full-graph">全图浏览</button>
+  </div>
+</header>
+
+<main>
+  <section id="graph-panel">
+    <div id="legend">
+      <span class="lg"><i class="dot entity"></i>实体（命中高亮）</span>
+      <span class="lg"><i class="dot chunk"></i>Chunk</span>
+      <span class="lg"><i class="dot seed"></i>Seed Chunk（绿=向量路 橙=三元组路）</span>
+      <span class="lg"><i class="dot hop"></i>Hop Chunk</span>
+      <span class="lg"><i class="line triple"></i>三元组边</span>
+      <span class="lg"><i class="line hop-edge"></i>CHUNK_HOP 边</span>
+      <span class="lg"><i class="line conclude"></i>text_conclude 定位边</span>
+    </div>
+    <div id="graph-canvas"><div id="canvas-fallback" style="display:flex;height:100%;align-items:center;justify-content:center;color:#55617a;font-size:13px;text-align:center;padding:20px;">正在加载可视化引擎…<br>若长时间无响应，请查看下方状态栏的错误提示</div></div>
+    <div id="status-bar">正在初始化…（JS 未执行成功时会一直停留在此提示）</div>
+  </section>
+
+  <aside id="side-panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="results">检索结果</button>
+      <button class="tab" data-tab="evolution">演进操作</button>
+      <button class="tab" data-tab="detail">详情</button>
+    </div>
+
+    <div id="tab-results" class="tab-body">
+      <h3>LLM 过滤后三元组 <span id="filter-mode" class="tag"></span></h3>
+      <div id="filtered-triples" class="list"><div class="empty">尚未检索</div></div>
+      <h3>命中三元组</h3>
+      <div id="matched-triples" class="list"><div class="empty">—</div></div>
+      <h3>PPR 排序 Chunk</h3>
+      <div id="ranked-chunks" class="list"><div class="empty">—</div></div>
+    </div>
+
+    <div id="tab-evolution" class="tab-body" style="display:none">
+      <h3>图演进（EvoGraph-R1 接口演示）</h3>
+      <p class="hint">通过 <code>POST /api/evolve</code> 应用图操作（增删改节点与边），向量库自动增量同步，
+      图版本号提升，检索立即感知新结构。</p>
+      <textarea id="evolve-ops" rows="8" placeholder='[
+  {"op": "add_triple", "payload": {"head": "示例实体", "relation": "演进关系", "tail": "知识库自演进"}, "reason": "demo"}
+]'></textarea>
+      <button id="btn-evolve" class="primary">应用演进操作</button>
+      <pre id="evolve-result" class="mono"></pre>
+    </div>
+
+    <div id="tab-detail" class="tab-body" style="display:none">
+      <pre id="detail-content" class="mono">点击图中的节点或边查看详情。</pre>
+    </div>
+  </aside>
+</main>
+
+<footer>知识库自演进项目 · OpenIE 两步抽取 / 流式并行构图 / 增量向量库 / 演进钩子预留</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

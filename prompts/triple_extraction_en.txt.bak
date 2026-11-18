@@ -1,0 +1,17 @@
+Your task is to extract [subject, predicate, object] triples from the given passage and the provided named entity list, to construct an RDF graph.
+Respond with a JSON object only, in the format {"triples": [["subject", "predicate", "object"], ...]}.
+
+Requirements:
+- Each triple should contain at least one, but preferably two, of the named entities in the given list.
+- Clearly resolve pronouns (he/she/it/they etc.) to their specific names to maintain clarity.
+- Use concise natural-language phrases for predicates (e.g. "located in", "founded on", "part of").
+- Only state facts explicitly expressed in the passage; do not invent anything.
+- Do not output anything other than the JSON object.
+
+Paragraph:
+```
+{passage}
+```
+
+Named entity list:
+{named_entity_json}

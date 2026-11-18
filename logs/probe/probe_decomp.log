@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/expelliarmus/miniconda3/envs/agentic_search/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/expelliarmus/miniconda3/envs/agentic_search/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/mnt/e/yf/knowledge_self_evolution/evaluation/probe_decomp.py", line 175, in <module>
+    main()
+  File "/mnt/e/yf/knowledge_self_evolution/evaluation/probe_decomp.py", line 125, in main
+    unreach_samples.append((q["idx"], q["question"], [g for g in gold_in_graph
+KeyError: 'idx'

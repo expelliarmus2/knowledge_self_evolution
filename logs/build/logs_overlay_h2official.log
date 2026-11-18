@@ -1,0 +1,48 @@
+building 3108 selected {'count_shared': 4035, 'idf_shared': 4094, 'idf_triple': 5007}
+building 3464 selected {'count_shared': 8012, 'idf_shared': 8270, 'idf_triple': 10011}
+building 3817 selected {'count_shared': 11942, 'idf_shared': 12555, 'idf_triple': 15008}
+building 3818 selected {'count_shared': 11942, 'idf_shared': 12555, 'idf_triple': 15008}
+building 4185 selected {'count_shared': 15738, 'idf_shared': 16702, 'idf_triple': 20006}
+building 4617 selected {'count_shared': 19404, 'idf_shared': 20799, 'idf_triple': 25007}
+building 8250 selected {'count_shared': 22920, 'idf_shared': 24739, 'idf_triple': 30009}
+building 12128 selected {'count_shared': 26415, 'idf_shared': 28764, 'idf_triple': 35011}
+building 16107 selected {'count_shared': 29955, 'idf_shared': 32769, 'idf_triple': 40006}
+building 20095 selected {'count_shared': 33578, 'idf_shared': 36738, 'idf_triple': 45009}
+building 24272 selected {'count_shared': 37165, 'idf_shared': 40605, 'idf_triple': 50014}
+building 28529 selected {'count_shared': 40896, 'idf_shared': 44557, 'idf_triple': 55002}
+building 28540 selected {'count_shared': 40899, 'idf_shared': 44560, 'idf_triple': 55013}
+building 33006 selected {'count_shared': 44688, 'idf_shared': 48437, 'idf_triple': 60002}
+building 33017 selected {'count_shared': 44708, 'idf_shared': 48456, 'idf_triple': 60018}
+building 37429 selected {'count_shared': 48718, 'idf_shared': 52487, 'idf_triple': 65003}
+building 41928 selected {'count_shared': 52531, 'idf_shared': 56177, 'idf_triple': 70012}
+building 46705 selected {'count_shared': 56774, 'idf_shared': 60095, 'idf_triple': 75000}
+building 46716 selected {'count_shared': 56792, 'idf_shared': 60111, 'idf_triple': 75014}
+building 51439 selected {'count_shared': 61025, 'idf_shared': 63880, 'idf_triple': 80000}
+building 51450 selected {'count_shared': 61040, 'idf_shared': 63896, 'idf_triple': 80017}
+building 56084 selected {'count_shared': 65604, 'idf_shared': 67889, 'idf_triple': 85001}
+building 56095 selected {'count_shared': 65614, 'idf_shared': 67894, 'idf_triple': 85018}
+building 61461 selected {'count_shared': 70329, 'idf_shared': 71769, 'idf_triple': 90005}
+building 61472 selected {'count_shared': 70341, 'idf_shared': 71775, 'idf_triple': 90016}
+building 66683 selected {'count_shared': 75147, 'idf_shared': 75490, 'idf_triple': 95003}
+building 66694 selected {'count_shared': 75151, 'idf_shared': 75493, 'idf_triple': 95009}
+building 66705 selected {'count_shared': 75151, 'idf_shared': 75493, 'idf_triple': 95009}
+building 66716 selected {'count_shared': 75151, 'idf_shared': 75493, 'idf_triple': 95009}
+building 66727 selected {'count_shared': 75151, 'idf_shared': 75493, 'idf_triple': 95009}
+building 71751 selected {'count_shared': 80148, 'idf_shared': 79167, 'idf_triple': 100008}
+building 77516 selected {'count_shared': 85252, 'idf_shared': 82836, 'idf_triple': 105011}
+building 77527 selected {'count_shared': 85256, 'idf_shared': 82837, 'idf_triple': 105013}
+building 77528 selected {'count_shared': 85259, 'idf_shared': 82837, 'idf_triple': 105016}
+building 83039 selected {'count_shared': 90665, 'idf_shared': 86660, 'idf_triple': 110000}
+building 83050 selected {'count_shared': 90684, 'idf_shared': 86678, 'idf_triple': 110016}
+building 89305 selected {'count_shared': 96419, 'idf_shared': 90312, 'idf_triple': 115007}
+building 89316 selected {'count_shared': 96423, 'idf_shared': 90314, 'idf_triple': 115011}
+building 95139 selected {'count_shared': 101967, 'idf_shared': 93926, 'idf_triple': 120000}
+building 95150 selected {'count_shared': 101980, 'idf_shared': 93939, 'idf_triple': 120018}
+building 101971 selected {'count_shared': 108121, 'idf_shared': 97551, 'idf_triple': 125007}
+building 101972 selected {'count_shared': 108131, 'idf_shared': 97552, 'idf_triple': 125007}
+building 101983 selected {'count_shared': 108145, 'idf_shared': 97554, 'idf_triple': 125010}
+building 101994 selected {'count_shared': 108158, 'idf_shared': 97555, 'idf_triple': 125012}
+count_shared {'undirected_pairs': 108853, 'directed_records_equivalent': 217706, 'connected_passages': 10661, 'isolated_passages': 986, 'max_degree': 206, 'score_min': 1.0, 'score_max': 31.0, 'counts': {'direct_positive': 108853, 'bridge_positive': 0, 'bridge_only': 0}, 'overlay_sha256': '89766b145ea40e082ea630c38e6c7dfaf456720dfbb51550e4217317b0c9c283', 'edge_records_sha256': 'cd94caba675cb01a16665218f4ac5157d624a0c2990b0d0797d3f24a63018558'}
+idf_shared {'undirected_pairs': 97958, 'directed_records_equivalent': 195916, 'connected_passages': 10661, 'isolated_passages': 986, 'max_degree': 229, 'score_min': 0.6264389145825254, 'score_max': 28.972833558718303, 'counts': {'direct_positive': 97958, 'bridge_positive': 0, 'bridge_only': 0}, 'overlay_sha256': 'a51c6c7dcf094192e7844acc4bc27e96f8f3a9679091c3215449feb43126d750', 'edge_records_sha256': '0eb70c1a31d2de13ae614c23ceb635455ab310beeda2d4ade7fef399d1be04a1'}
+idf_triple {'undirected_pairs': 125593, 'directed_records_equivalent': 251186, 'connected_passages': 10680, 'isolated_passages': 967, 'max_degree': 440, 'score_min': 0.3132194572912627, 'score_max': 47.97293532494157, 'counts': {'direct_positive': 103893, 'bridge_positive': 119218, 'bridge_only': 21700}, 'overlay_sha256': 'fc878c7e4ff0f0c759e489fed8a913566a4fe67040f04e7280e520860153a7e7', 'edge_records_sha256': '5fe28fd9fa8692dac7db049fe82545c8fb3f7dc2e5634f9a0cce0f94ccf37b8b'}
+OVERLAY DONE

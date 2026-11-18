@@ -1,0 +1,71 @@
+2026-11-14 14:00:30,645 - INFO - ============================================================
+2026-11-14 14:00:30,645 - INFO - ChunkHop Retriever Initialization
+2026-11-14 14:00:30,646 - INFO - ============================================================
+2026-11-14 14:00:31,312 - INFO - 
+============================================================
+2026-11-14 14:00:31,312 - INFO -   模式: dual_seed
+2026-11-14 14:00:31,313 - INFO - ============================================================
+2026-11-14 14:00:31,313 - INFO -   skip_entity_in_subgraph=False, use_triple_weight_no_entity=False
+2026-11-14 14:00:31,326 - INFO - Loading graph from /mnt/e/yf/knowledge_self_evolution/data/h2official/graph_export_with_chunk_hop
+2026-11-14 14:00:31,761 - INFO - Graph loaded: 108854 nodes, 276343 edges (passage_only=False)
+2026-11-14 14:00:32,690 - INFO - Meta caches: 97207 entities with passages, 11617 passages with entities, text_conclude_edges=146441, chunk_hop_edges=2804, use_fast_search=True, entity_name_map=97207, passage_only=False, min_hop_intersection=1, hop_degree_normalize=False
+2026-11-14 14:00:32,693 - INFO - Fast search: using HNSW passage VDB: /mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/dataset/musique_h2official/vdb_passages_hnsw.faiss
+2026-11-14 14:00:32,696 - INFO - Fast search: using HNSW triple VDB: /mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/dataset/musique_h2official/vdb_triples_hnsw.faiss
+2026-11-14 14:00:32,704 - INFO - Loading faiss with AVX512 support.
+2026-11-14 14:00:32,705 - INFO - Could not load library with AVX512 support due to:
+ModuleNotFoundError("No module named 'faiss.swigfaiss_avx512'")
+2026-11-14 14:00:32,705 - INFO - Loading faiss with AVX2 support.
+2026-11-14 14:00:32,706 - INFO - Could not load library with AVX2 support due to:
+ModuleNotFoundError("No module named 'faiss.swigfaiss_avx2'")
+2026-11-14 14:00:32,706 - INFO - Loading faiss.
+2026-11-14 14:00:32,731 - INFO - Successfully loaded faiss.
+2026-11-14 14:00:32,937 - INFO - Passage VDB loaded (HNSW efSearch=256): 11647 vectors
+2026-11-14 14:00:35,044 - INFO - Triple VDB loaded (HNSW efSearch=256): 127098 vectors
+2026-11-14 14:00:35,400 - INFO - Triple mapping loaded: 127098 triples
+2026-11-14 14:00:35,466 - INFO - Evaluating: 1000 samples, dataset format: musique_h2official, test format: raw
+2026-11-14 14:00:35,466 - INFO - Search params: {'top_k': 50, 'mode': 'dual_seed'}
+2026-11-14 14:00:35,467 - INFO - Match mode: fuzzy (threshold=0.8)
+2026-11-14 14:00:35,467 - INFO - Rerank: OFF
+Evaluating:   0%|          | 0/1000 [00:00<?, ?it/s]Evaluating:   0%|          | 1/1000 [00:00<02:11,  7.58it/s]Evaluating:   1%|          | 12/1000 [00:00<00:16, 60.70it/s]Evaluating:   3%|▎         | 27/1000 [00:00<00:09, 98.21it/s]Evaluating:   4%|▍         | 40/1000 [00:00<00:08, 109.25it/s]Evaluating:   5%|▌         | 52/1000 [00:00<00:08, 111.21it/s]Evaluating:   7%|▋         | 66/1000 [00:00<00:07, 118.80it/s]Evaluating:   8%|▊         | 79/1000 [00:00<00:07, 119.81it/s]Evaluating:   9%|▉         | 93/1000 [00:00<00:07, 124.76it/s]Evaluating:  11%|█         | 106/1000 [00:00<00:07, 120.07it/s]Evaluating:  12%|█▏        | 121/1000 [00:01<00:07, 125.08it/s]Evaluating:  14%|█▎        | 135/1000 [00:01<00:06, 128.29it/s]Evaluating:  15%|█▍        | 148/1000 [00:01<00:08, 104.65it/s]Evaluating:  16%|█▌        | 160/1000 [00:01<00:07, 105.72it/s]Evaluating:  18%|█▊        | 175/1000 [00:01<00:07, 116.47it/s]Evaluating:  19%|█▉        | 189/1000 [00:01<00:06, 120.06it/s]Evaluating:  20%|██        | 202/1000 [00:01<00:06, 121.48it/s]Evaluating:  22%|██▏       | 216/1000 [00:01<00:06, 125.50it/s]Evaluating:  23%|██▎       | 229/1000 [00:01<00:06, 126.53it/s]Evaluating:  24%|██▍       | 242/1000 [00:02<00:06, 125.41it/s]Evaluating:  26%|██▌       | 255/1000 [00:02<00:05, 125.70it/s]Evaluating:  27%|██▋       | 270/1000 [00:02<00:05, 128.52it/s]Evaluating:  28%|██▊       | 283/1000 [00:02<00:05, 128.76it/s]Evaluating:  30%|██▉       | 298/1000 [00:02<00:05, 134.11it/s]Evaluating:  31%|███       | 312/1000 [00:02<00:05, 129.44it/s]Evaluating:  33%|███▎      | 326/1000 [00:02<00:05, 127.24it/s]Evaluating:  34%|███▍      | 339/1000 [00:02<00:05, 127.65it/s]Evaluating:  35%|███▌      | 354/1000 [00:02<00:04, 133.94it/s]Evaluating:  37%|███▋      | 368/1000 [00:03<00:04, 132.34it/s]Evaluating:  38%|███▊      | 382/1000 [00:03<00:04, 133.22it/s]Evaluating:  40%|███▉      | 396/1000 [00:03<00:04, 132.18it/s]Evaluating:  41%|████      | 410/1000 [00:03<00:04, 132.00it/s]Evaluating:  42%|████▏     | 424/1000 [00:03<00:04, 127.44it/s]Evaluating:  44%|████▍     | 439/1000 [00:03<00:04, 133.60it/s]Evaluating:  45%|████▌     | 454/1000 [00:03<00:04, 134.56it/s]Evaluating:  47%|████▋     | 468/1000 [00:03<00:03, 135.19it/s]Evaluating:  48%|████▊     | 483/1000 [00:03<00:03, 137.10it/s]Evaluating:  50%|████▉     | 497/1000 [00:04<00:03, 136.87it/s]Evaluating:  51%|█████     | 511/1000 [00:04<00:03, 137.14it/s]Evaluating:  52%|█████▎    | 525/1000 [00:04<00:03, 133.33it/s]Evaluating:  54%|█████▍    | 539/1000 [00:04<00:03, 131.80it/s]Evaluating:  55%|█████▌    | 554/1000 [00:04<00:03, 133.89it/s]Evaluating:  57%|█████▋    | 568/1000 [00:04<00:03, 134.38it/s]Evaluating:  58%|█████▊    | 582/1000 [00:04<00:03, 127.14it/s]Evaluating:  60%|█████▉    | 596/1000 [00:04<00:03, 129.79it/s]Evaluating:  61%|██████    | 610/1000 [00:04<00:03, 128.54it/s]Evaluating:  62%|██████▏   | 623/1000 [00:05<00:03, 124.44it/s]Evaluating:  64%|██████▎   | 636/1000 [00:05<00:03, 121.09it/s]Evaluating:  65%|██████▍   | 649/1000 [00:05<00:02, 121.15it/s]Evaluating:  66%|██████▌   | 662/1000 [00:05<00:02, 122.36it/s]Evaluating:  68%|██████▊   | 675/1000 [00:05<00:02, 121.92it/s]Evaluating:  69%|██████▉   | 689/1000 [00:05<00:02, 125.90it/s]Evaluating:  70%|███████   | 702/1000 [00:05<00:02, 125.25it/s]Evaluating:  72%|███████▏  | 715/1000 [00:05<00:02, 123.91it/s]Evaluating:  73%|███████▎  | 728/1000 [00:05<00:02, 123.19it/s]Evaluating:  74%|███████▍  | 742/1000 [00:05<00:02, 125.80it/s]Evaluating:  76%|███████▌  | 756/1000 [00:06<00:01, 126.24it/s]Evaluating:  77%|███████▋  | 770/1000 [00:06<00:01, 129.50it/s]Evaluating:  78%|███████▊  | 784/1000 [00:06<00:01, 130.56it/s]Evaluating:  80%|███████▉  | 798/1000 [00:06<00:01, 133.12it/s]Evaluating:  81%|████████▏ | 813/1000 [00:06<00:01, 136.76it/s]Evaluating:  83%|████████▎ | 827/1000 [00:06<00:01, 136.93it/s]Evaluating:  84%|████████▍ | 841/1000 [00:06<00:01, 136.13it/s]Evaluating:  86%|████████▌ | 855/1000 [00:06<00:01, 134.94it/s]Evaluating:  87%|████████▋ | 869/1000 [00:06<00:00, 133.08it/s]Evaluating:  88%|████████▊ | 883/1000 [00:07<00:00, 135.06it/s]Evaluating:  90%|████████▉ | 897/1000 [00:07<00:00, 131.46it/s]Evaluating:  91%|█████████ | 911/1000 [00:07<00:00, 130.29it/s]Evaluating:  92%|█████████▎| 925/1000 [00:07<00:00, 128.68it/s]Evaluating:  94%|█████████▍| 940/1000 [00:07<00:00, 133.23it/s]Evaluating:  95%|█████████▌| 954/1000 [00:07<00:00, 130.80it/s]Evaluating:  97%|█████████▋| 970/1000 [00:07<00:00, 138.20it/s]Evaluating:  98%|█████████▊| 985/1000 [00:07<00:00, 137.06it/s]Evaluating: 100%|██████████| 1000/1000 [00:07<00:00, 138.51it/s]Evaluating: 100%|██████████| 1000/1000 [00:07<00:00, 126.99it/s]
+2026-11-14 14:00:44,799 - INFO - Results dump saved: /mnt/e/yf/knowledge_self_evolution/data/h2official/dump_hpopt.jsonl (1000 rows)
+2026-11-14 14:00:46,088 - INFO - 
+Results saved: /mnt/e/yf/worktrees/kg_ablation_main/Green-ChunkHop/exp_weight_ablation/results/musique_h2official_chunk_hop_eval_results.json
+
+======================================================================
+ChunkHop Retrieval Results
+======================================================================
+
+======================================================================
+  模式: dual_seed
+======================================================================
+
+  [dual_seed (PPR)]
+    K        Recall      MRR     NDCG
+    --------------------------------
+    @5       0.0471   0.0417   0.0325
+    @10      0.1468   0.0654   0.0730
+    @15      0.2917   0.0826   0.1225
+    @20      0.4227   0.0937   0.1632
+    @30      0.5989   0.1010   0.2133
+    成功: 1000, 失败: 0, 跳过: 0
+    平均时间: 0.006s
+  Stage-level timing breakdown:
+                      Stage:      Avg       %
+  ---------------------------------------------
+           triple_faiss_raw: 0.0015s  (25.8%)
+          triple_vdb_search: 0.0017s  (29.3%)
+          passage_faiss_raw: 0.0009s  (15.5%)
+         passage_vdb_search: 0.0017s  (29.3%)
+             seed_retrieval: 0.0018s  (31.0%)
+              hop_diffusion: 0.0003s  (5.2%)
+             chunk_hop_scan: 0.0002s  (3.4%)
+       personalization_calc: 0.0002s  (3.4%)
+          result_extraction: 0.0002s  (3.4%)
+               bridge_build: 0.0016s  (27.6%)
+  semantic_transition_build: 0.0004s  (6.9%)
+  ---------------------------------------------
+                      total: 0.006s  (100.0%)
+
+======================================================================
+总评估时间: 13.49s
+======================================================================

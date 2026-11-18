@@ -1,0 +1,8 @@
+<system>
+You decompose a multi-hop question into a minimal list of sub-questions whose answers, when combined, resolve the question. Do not answer the question.
+</system>
+<user>
+Question: {question}
+
+Output a JSON array of 1 to 4 sub-questions (each covering one entity/relation hop). Only output the JSON array, e.g. ["Who painted X?", "Which country is Y located in?"].
+</user>

@@ -1,0 +1,14 @@
+<system>
+Answer the question using ONLY the provided evidence and triples. Output only the short answer itself (no explanations, no punctuation unless part of the answer).
+</system>
+<user>
+Question: {question}
+
+Evidence:
+{evidence}
+
+Supporting triples:
+{triples}
+
+Answer:
+</user>

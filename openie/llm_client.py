@@ -1,0 +1,323 @@
+"""OpenAI 兼容 LLM 客户端，重试 + 指数退避；provider 可切换为 mock（离线演示/测试）。"""
+from __future__ import annotations
+
+import json
+import logging
+import random
+import re
+import time
+from typing import Dict, List, Optional
+
+from utils.config import Config
+
+logger = logging.getLogger("kb")
+
+
+class LLMClient:
+    """OpenAI 兼容 chat completions 客户端。"""
+
+    def __init__(
+        self,
+        model: str,
+        base_url: str,
+        api_key: str = "dummy",
+        temperature: float = 0.1,
+        max_tokens: int = 4096,
+        timeout: int = 120,
+        max_retries: int = 3,
+        retry_backoff: float = 2.0,
+        enable_thinking: Optional[bool] = None,
+    ):
+        from openai import OpenAI  # 延迟导入
+        self.model = model
+        # deepseek/qwen 思考类模型：抽取任务不需要长思考，显式关闭可大幅提速降本
+        self.enable_thinking = enable_thinking
+        self.client = OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.max_retries = max_retries
+        self.retry_backoff = retry_backoff
+
+    def generate(self, messages: List[Dict[str, str]]) -> str:
+        last_err: Optional[Exception] = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                kwargs: Dict = {}
+                if self.enable_thinking is not None:
+                    kwargs["extra_body"] = {"enable_thinking": bool(self.enable_thinking)}
+                resp = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    **kwargs,
+                )
+                return resp.choices[0].message.content or ""
+            except Exception as err:  # noqa: BLE001
+                last_err = err
+                if attempt < self.max_retries:
+                    sleep = self.retry_backoff * (2 ** attempt) + random.random() * 0.5
+                    logger.warning("LLM 调用失败(第%d次): %s，%.1fs 后重试", attempt + 1, err, sleep)
+                    time.sleep(sleep)
+        raise RuntimeError(f"LLM 调用最终失败: {last_err}") from last_err
+
+
+# --------------------------------------------------------------------------
+# Mock LLM：基于规则的确定性实现，用于离线演示与冒烟测试。
+# 通过识别模板中的输出协议关键词（named_entities / triples / fact）分流。
+# --------------------------------------------------------------------------
+_REL_LEXICON_ZH = [
+    "位于", "创立于", "成立于", "创办于", "毕业于", "出生于", "任教于", "隶属于", "属于",
+    "包含", "包括", "研发", "开发", "发布", "推出", "收购", "投资", "合作", "担任",
+    "获得", "荣获", "提出", "发明", "出版", "引入", "集成", "建设", "构成", "组成",
+    "导致", "促进", "基于", "使用", "支持", "是", "有",
+]
+
+# 常见功能词/动词片段，不作为实体（Mock NER 过滤）
+_MOCK_STOP_ENTITIES = {
+    "一家", "一个", "一些", "目前", "此后", "最早", "正式", "主要", "通常", "核心",
+    "成立", "位于", "毕业", "发布", "提出", "研发", "开发", "推出", "支持", "包含",
+    "包括", "属于", "隶属", "收购", "投资", "合作", "担任", "获得", "荣获", "发明",
+    "出版", "引入", "集成", "建设", "用于", "基于", "使用", "提升", "表现", "优异",
+    "缩写", "其中", "该", "其", "此", "它", "他", "她", "该公司", "该组织", "该系统",
+    "升级", "版本", "最早", "多种", "两个", "三个", "方法", "能力", "单元", "知识",
+}
+
+# CJK 分段分隔符（功能词/标点）
+_MOCK_SEG_SPLIT = re.compile(
+    r"[\s，。；、！？：：（）()\u3000\"\"''『』《》\[\]{}]+"
+    r"|(?<=[一-龥])(?:是|的|了|于|和|与|将|并|把|被|为|由|在|对|向|从|而|则|且|即)(?=[一-龥])"
+)
+
+# 组织/产品后缀
+_MOCK_ORG_SUFFIX = r"(?:有限公司|股份公司|公司|医院|大学|学院|银行|资本|集团|科技|平台|研究院|实验室)"
+
+_CJK = r"\u4e00-\u9fff"
+
+_MOCK_FUNC_CHARS = re.compile(r"[是的了于和与将并把被为由在对向从而则且即]")
+_MOCK_VERB_TAIL = {
+    "获得", "提出", "发布", "成立", "位于", "研发", "包含", "支持", "推出", "收购",
+    "投资", "合作", "担任", "荣获", "发明", "出版", "引入", "集成", "建设", "构成",
+    "组成", "导致", "促进", "基于", "使用", "毕业", "任教", "隶属", "创始", "抽取",
+}
+_MOCK_BAD_PREFIX2 = {"一家", "一个", "一些", "一种", "这项", "这部", "获得", "包括"}
+
+
+def _mock_name_ok(e: str) -> bool:
+    """实体候选清洗：剔除含功能词/动词尾巴/代词前缀的噪声候选。"""
+    if _MOCK_FUNC_CHARS.search(e):
+        return False
+    if len(e) >= 2 and (e[:2] in _MOCK_BAD_PREFIX2 or e[-2:] in _MOCK_VERB_TAIL):
+        return False
+    if e[0] in "他她它其该此":
+        return False
+    if re.fullmatch(r"\d+", e):
+        return False
+    return True
+
+
+def _mock_extract_passage(user_content: str) -> str:
+    """从格式化后的 user 消息中抠出待处理段落（``` 包裹优先）。"""
+    fence = re.search(r"```\s*([\s\S]*?)\s*```", user_content)
+    if fence:
+        return fence.group(1)
+    return user_content
+
+
+def _mock_ner(passage: str) -> List[str]:
+    """确定性 NER：模式规则（机构后缀/人名/日期/拉丁词/引号）+ CJK 分段回退。"""
+    entities: List[str] = []
+
+    def _add(e: str, validate: bool = True) -> None:
+        e = e.strip(" ·，。；：、")
+        if e and len(e) >= 2 and e not in _MOCK_STOP_ENTITIES:
+            if not validate or _mock_name_ok(e):
+                entities.append(e)
+
+    # 1. 拉丁/技术词（HippoRAG2、bge-m3、PageRank …，不做中文规则校验）
+    for m in re.finditer(r"[A-Za-z][A-Za-z0-9\-_+.]{1,}", passage):
+        _add(m.group(), validate=False)
+    # 2. 日期/年份/金额（不做中文规则校验）
+    for m in re.finditer(
+        r"\d{4}\s*年(?:\d{1,2}\s*月)?(?:\d{1,2}\s*日)?|\d{1,2}\s*月\d{1,2}\s*日"
+        r"|\d+(?:\.\d+)?\s*(?:万|亿)?\s*(?:美元|元|人民币)", passage
+    ):
+        _add(m.group(), validate=False)
+    # 3. 组织/产品（后缀锚定，惰性前缀）
+    for m in re.finditer(r"[一-龥A-Za-z0-9]{2,12}?" + _MOCK_ORG_SUFFIX, passage):
+        _add(m.group())
+    # 4. 人物（职务/关系模式）
+    for m in re.finditer(
+        rf"(?:创始人|首席科学家|CEO|总裁|董事长|教授|博士|院士|作者|导演)(?:是|为)([{_CJK}]{{2,4}})", passage
+    ):
+        _add(m.group(1))
+    for m in re.finditer(rf"([{_CJK}]{{2,4}})(?:毕业于|出生于|此前在|就读于)", passage):
+        _add(m.group(1))
+    # 5. 地点
+    for m in re.finditer(rf"(?:位于|坐落于)([{_CJK}]{{2,6}})", passage):
+        _add(m.group(1))
+    # 6. 《》/「」引号内容
+    for m in re.finditer(r"[《「‘][^》」’]{2,20}[》」’]", passage):
+        _add(m.group()[1:-1])
+    # 7. 回退：CJK 按功能词分段（长 2~8，纯字母数字汉字）
+    for seg in _MOCK_SEG_SPLIT.split(passage):
+        if 2 <= len(seg) <= 8 and re.fullmatch(rf"[{_CJK}A-Za-z0-9]+", seg):
+            _add(seg)
+    # 去重保序
+    seen, out = set(), []
+    for e in entities:
+        if e not in seen:
+            seen.add(e)
+            out.append(e)
+    return out[:64]
+
+
+# 三元组特殊句式（优先于通用实体对规则）
+_MOCK_TRIPLE_PATTERNS = [
+    # X的Y(是|为)Z → (X, Y, Z)，如「星辰科技的创始人是林远」
+    (re.compile(rf"([{_CJK}A-Za-z0-9]{{2,12}}?)的([{_CJK}]{{2,8}})(?:是|为)([{_CJK}A-Za-z0-9]{{2,12}})"), None),
+    # X(与|和)Y合作 → 合作
+    (re.compile(rf"([{_CJK}A-Za-z0-9]{{2,12}})(?:与|和)([{_CJK}A-Za-z0-9]{{2,12}})合作"), "合作"),
+    # X获得了Y的投资 → (X, 获得投资于, Y)
+    (re.compile(rf"([{_CJK}A-Za-z0-9]{{2,12}})获得了?([{_CJK}A-Za-z0-9]{{2,12}})的投资"), "获得投资于"),
+    # X的(主要)客户(包括|有)Y → 客户包括
+    (re.compile(rf"([{_CJK}A-Za-z0-9]{{2,12}})的(?:主要)?客户(?:包括|有)([{_CJK}A-Za-z0-9]{{2,12}})"), "客户包括"),
+    # X由Y(提出|创立|创办) → (Y, 提出, X)
+    (re.compile(rf"([{_CJK}A-Za-z0-9]{{2,12}})由([{_CJK}A-Za-z0-9]{{2,12}})(?:提出|创立|创办|开发)"), "_rev:提出"),
+    # X(Y)研发/发布/推出/集成/包含 …（动词后的宾语实体由通用规则处理）
+]
+
+
+def _mock_re(passage: str, entities: List[str]) -> List[List[str]]:
+    """确定性 RE：特殊句式优先，句内实体对 + 介词词典关系回退。"""
+    sentences = re.split(r"[。！？!?\n]", passage)
+    triples: List[List[str]] = []
+
+    for sent in sentences:
+        if not sent.strip():
+            continue
+        # 特殊句式
+        for pat, fixed_rel in _MOCK_TRIPLE_PATTERNS:
+            for m in pat.finditer(sent):
+                groups = [g for g in m.groups() if g]
+                if fixed_rel is None and len(groups) >= 3:
+                    triples.append([groups[0], groups[1], groups[2]])
+                elif fixed_rel is not None and len(groups) >= 2:
+                    if isinstance(fixed_rel, str) and fixed_rel.startswith("_rev:"):
+                        # 方向反转：X 由 Y 提出 → (Y, 提出, X)
+                        triples.append([groups[1], fixed_rel[5:], groups[0]])
+                    else:
+                        triples.append([groups[0], fixed_rel, groups[1]])
+        # 通用实体对
+        present = [e for e in entities if e in sent]
+        for i in range(len(present)):
+            for j in range(i + 1, len(present)):
+                a, b = present[i], present[j]
+                pos_a, pos_b = sent.index(a), sent.index(b)
+                lo_ent, hi_ent = (a, b) if pos_a < pos_b else (b, a)
+                start = min(pos_a, pos_b) + len(lo_ent)
+                between = sent[start: max(pos_a, pos_b)]
+                rel = "相关"
+                for cand in _REL_LEXICON_ZH:
+                    if cand in between:
+                        rel = cand
+                        break
+                if rel == "相关" and _is_stop_phrase(between):
+                    continue  # 纯功能词间隔不建边
+                triples.append([lo_ent, rel, hi_ent])
+    # 去重保序
+    seen, out = set(), []
+    for t in triples:
+        key = tuple(t)
+        if key not in seen:
+            seen.add(key)
+            out.append(t)
+    return out
+
+
+def _is_stop_phrase(between: str) -> bool:
+    """实体间仅为功能词间隔（如「，」「和」「及」「等」）时视为无关系。"""
+    return bool(re.fullmatch(r"[\s，、；和与及等也仍]*", between))
+
+
+class MockLLMClient:
+    """离线 mock：按输出协议关键词分流，返回确定性 JSON。"""
+
+    def __init__(self, **kwargs):
+        pass
+
+    def generate(self, messages: List[Dict[str, str]]) -> str:
+        content = "\n".join(m.get("content", "") for m in messages)
+        passage = _mock_extract_passage(content)
+        if "<|>" in content:
+            # one_step 模式（huaxi 分隔符协议）：直接返回 <|> ## <|COMPLETE|> 格式
+            ents = _mock_ner(passage)
+            tris = _mock_re(passage, ents)
+            if not tris:
+                return "<|COMPLETE|>"
+            return "##".join(f"{s}<|>{p}<|>{o}" for s, p, o in tris) + "##\n<|COMPLETE|>"
+        if "named_entities" in content and "triples" not in content:
+            ents = _mock_ner(passage)
+            return json.dumps({"named_entities": ents}, ensure_ascii=False)
+        if "triples" in content:
+            ents = _mock_ner(passage)
+            tris = _mock_re(passage, ents)
+            return json.dumps({"triples": tris}, ensure_ascii=False)
+        if "fact" in content:
+            # 检索过滤：保留与 question 有词面重叠的事实
+            facts: List[List[str]] = []
+            question = ""
+            # question：最后一个 查询/Question 标记后的首行（避开模板里的说明文字）
+            for marker in ("查询：", "查询:", "Question:", "question:"):
+                idx = content.rfind(marker)
+                if idx != -1:
+                    tail = content[idx + len(marker):].strip()
+                    question = tail.splitlines()[0].strip() if tail else ""
+                    break
+            # facts：最后一个候选数组标记后的完整 JSON 数组
+            seg = None
+            for marker in ("候选三元组", "Candidate triples", "candidate triples"):
+                idx = content.rfind(marker)
+                if idx != -1:
+                    seg = content[idx:]
+                    break
+            if seg:
+                m = re.search(r"\[[\s\S]*\]", seg)
+                if m:
+                    try:
+                        facts = json.loads(m.group())
+                    except json.JSONDecodeError:
+                        facts = []
+            # 中文字符级 + 英文词级重叠打分（整段 CJK run 无法直接相交）
+            q_tokens = set(re.findall(rf"[{_CJK}]", question)) | set(
+                w.lower() for w in re.findall(r"[A-Za-z]{2,}", question)
+            )
+            scored = []
+            for f in facts:
+                text = "".join(str(x) for x in f)
+                toks = set(re.findall(rf"[{_CJK}]", text)) | set(
+                    w.lower() for w in re.findall(r"[A-Za-z]{2,}", text)
+                )
+                scored.append((len(q_tokens & toks), f))
+            scored.sort(key=lambda x: -x[0])
+            keep = [f for sc, f in scored if sc > 0][:8]
+            return json.dumps({"fact": keep}, ensure_ascii=False)
+        return json.dumps({"ok": True}, ensure_ascii=False)
+
+
+def build_llm(cfg: Config) -> LLMClient:
+    """根据配置构造 LLM 客户端（provider: openai | mock）。"""
+    provider = str(cfg.get("llm.provider", "openai")).lower()
+    if provider == "mock":
+        return MockLLMClient()
+    return LLMClient(
+        model=cfg.require("llm.model"),
+        base_url=cfg.require("llm.base_url"),
+        api_key=cfg.get("llm.api_key", "dummy"),
+        temperature=float(cfg.get("llm.temperature", 0.1)),
+        max_tokens=int(cfg.get("llm.max_tokens", 4096)),
+        timeout=int(cfg.get("llm.timeout", 120)),
+        max_retries=int(cfg.get("llm.max_retries", 3)),
+        retry_backoff=float(cfg.get("llm.retry_backoff", 2.0)),
+        enable_thinking=cfg.get("llm.enable_thinking"),
+    )
