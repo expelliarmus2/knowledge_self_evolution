@@ -81,11 +81,18 @@ knowledge_self_evolution/
 
 ```bash
 # 1. 离线演示（mock LLM + mock embedding，无需任何服务）
-python -m pipeline.run build --mock          # 构建：data/raw → 图 + 向量库
-python -m pipeline.run search --query "星辰科技的创始人是谁？" --mock
-python -m pipeline.run serve  --mock          # Web 可视化 http://localhost:5570
+#    注意：--mock 是 256 维向量；若 data/raw 含大语料（如 corpus_musique.json）
+#    或 processed_dir 已是 1024 维真实库，必须用独立 --output 目录，否则报
+#    AssertionError: d == self.d（旧索引维度不匹配）。
+mkdir -p /tmp/kb_raw && cp data/raw/sample_docs.jsonl /tmp/kb_raw/   # 只放中文示例
+python -m pipeline.run build --mock --input /tmp/kb_raw --output /tmp/kb_demo
+python -m pipeline.run search --query "星辰科技的创始人是谁？" --mock --processed /tmp/kb_demo
+python -m pipeline.run serve  --mock --processed /tmp/kb_demo          # Web http://localhost:5570
 
-# 2. 真实模式：config/default.yaml 配置模型后
+# 1b. 也可以直接用仓库现成的中文演示库（无需 build）
+python -m pipeline.run search --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+
+# 2. 真实模式：config/default.yaml 配置模型后（embedding 服务 + LLM 服务）
 python -m pipeline.run build                  # 增量构建（已构建文档自动跳过）
 python -m pipeline.run build --full           # 全量重建
 python -m pipeline.run search --query "..." --json
@@ -107,8 +114,20 @@ python -m pipeline.run evolve --ops '[
 python -m pytest tests/ -q
 
 # 6. 统一门面 demo（科研入组筛查 + 知识库问答同一入口）
-python -m cohort.seed --count 30   # 生成合成结构化患者 demo 库
-python -m unified.demo --json      # 统一入口跑两条查询（KB 服务未启动时自动降级跳过 KB）
+python -m cohort.seed --count 30   # 生成合成结构化患者 demo 库（data/cohort/demo.db）
+# KB 侧默认连真实库（1024 维）；离线下用 --mock + 覆盖到 256 维演示库：
+KB_PATHS__PROCESSED_DIR=data/processed_demo_cn python -m unified.demo --mock --json
+# 只跑入组筛查（KB 不可用自动降级跳过）：
+python -m unified.demo --mock
+
+# 6b. 科研入组筛查单独跑（Python 交互）
+python -c "
+from cohort.engine import CohortEngine
+from cohort.seed import DEMO_IR
+r = CohortEngine('data/cohort/demo.db').search('科研入组筛查', DEMO_IR, reference_date='2026-11-18')
+print(r.summary)   # {'total': 30, 'PASS': 6, 'FAIL': 20, 'UNKNOWN': 4}
+print(r.sql)       # IR 编译出的 SQL
+"
 
 # 7. 评测（离线 mock 确定性；real 模式需真实 embedding/LLM 服务）
 python -m eval.run_eval retrieval --corpus main --mode mock
