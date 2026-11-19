@@ -98,23 +98,28 @@ def main(argv: list[str] | None = None) -> int:
 
     from unified.engine import EngineRegistry, UnifiedEngine
 
+    # 按需构建引擎：KB 引擎的构建代价很高（networkx/openai/faiss import、
+    # graph.pkl 反序列化、FAISS 索引加载），入组查询不需要它。
+    need_kb = query_type == "kb" or (isinstance(query, str) and query_type != "cohort")
     registry = EngineRegistry()
-    registry.register(build_cohort_engine(cfg, args.db, args.count))
-    kb_engine = build_kb_engine(cfg)
-    if kb_engine is not None:
+    kb_engine = None
+    if need_kb:
+        kb_engine = build_kb_engine(cfg)
+        if kb_engine is None:
+            # 自然语言 = RAG 语义：KB 不可用时前置给出明确提示
+            print(
+                "[unified] KB 引擎不可用（索引未构建或 embedding/LLM 服务未启动）；"
+                "自然语言 --query 走 RAG 需要 KB 引擎。\n"
+                "  请先构建：python -m pipeline.run build --mock --input <仅含示例文档的目录> --output <新目录>\n"
+                "  或直接指向现成演示库：--processed data/processed_demo_cn\n"
+                "  科研入组请改用：--ir '{\"include\": [...]}'（QueryIR 形态，不依赖 KB）",
+                file=sys.stderr,
+            )
+            return 1
         registry.register(kb_engine)
-
-    # 自然语言 = RAG 语义：KB 引擎缺失时前置给出明确提示（而非静默降级到 cohort 再报错）
-    if isinstance(query, str) and kb_engine is None and args.type != "cohort":
-        print(
-            "[unified] KB 引擎不可用（索引未构建或 embedding/LLM 服务未启动）；"
-            "自然语言 --query 走 RAG 需要 KB 引擎。\n"
-            "  请先构建：python -m pipeline.run build --mock --input <仅含示例文档的目录> --output <新目录>\n"
-            "  或直接指向现成演示库：--processed data/processed_demo_cn\n"
-            "  科研入组请改用：--ir '{\"include\": [...]}'（QueryIR 形态，不依赖 KB）",
-            file=sys.stderr,
-        )
-        return 1
+    else:
+        # cohort-only：不 import networkx/openai/faiss，不加载图与向量库
+        registry.register(build_cohort_engine(cfg, args.db, args.count))
 
     # KB 侧参数透传（cohort 引擎会忽略未识别的参数）；reference_date 仅 cohort 使用
     params: dict = {k: v for k, v in {

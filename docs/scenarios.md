@@ -305,3 +305,20 @@ result2 = unified.search("星辰科技的创始人是谁？", top_k=5)  # 自然
 
 `CohortEngine` 在实例内复用 SQLite 连接（`_connect()`），首次查询后即摊薄 connect 成本；
 若底层 db 被外部重建（`seed_database` 重跑），应 `close()` 或重建引擎实例。
+
+### 端到端延迟 vs 引擎内部延迟（latency_ms 的盲区）
+
+`meta.latency_ms` 只计 `search()` 内部；CLI 端到端还包含：进程启动 + 模块 import + 引擎构建。
+实测（本机 /mnt/e Windows 挂载盘）：
+
+| 路径 | search 内部 | 端到端 | 端到端构成 |
+|---|---|---|---|
+| 入组 `--ir`（优化前） | 0.3ms | **14.4s** | 白等 build_kb_engine 13.5s（图 3.7s + openai import 5.1s + FAISS 4.5s） |
+| 入组 `--ir`（按需构建后） | 0.3ms | **0.40s** | import yaml 0.3s + 其余 |
+| RAG `--query --mock` | 0.9s（首次） | ~4.6s | networkx import ~4.6s + faiss 0.8s + scipy 1.5s + 索引加载 |
+| RAG 同进程第 2 次 | 8ms | — | 无冷启动 |
+
+教训：
+1. **按输入形态按需构建引擎**——入组查询不再加载图/向量库/openai SDK（`unified/cli.py` 的 `need_kb` 分支）；
+2. CLI 单次进程必然吃一次重型 import；常驻 `serve` 或脚本内复用引擎实例后回到稳态毫秒级；
+3. 本机代码与 `.venv` 在 Windows 挂载盘（/mnt/e），文件 IO 慢进一步放大 import/加载成本。
