@@ -121,8 +121,9 @@ KB_PATHS__PROCESSED_DIR=data/processed_demo_cn python -m unified.demo --mock --j
 python -m unified.demo --mock
 
 # 6b. 统一检索 CLI：输入形态自动分流（str → RAG，QueryIR → 科研入组）
-#    自然语言问题 → 知识库多跳问答（RAG）
-python -m unified.cli --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+#    search 子命令可省略，两种写法等价（与 pipeline.run search 习惯一致）：
+python -m unified.cli search --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+python -m unified.cli      --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
 #    --query 也接受 IR JSON（统一形态分流）：含 include 的 JSON → cohort
 python -m unified.cli --query '{"include": [{"type": "age", "min": 18, "max": 75}]}'
 #    入组 QueryIR（JSON 或 @文件）→ 科研入组筛查（不依赖 KB）

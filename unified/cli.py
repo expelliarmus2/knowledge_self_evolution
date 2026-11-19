@@ -61,6 +61,8 @@ def maybe_ir_from_query(text: str) -> object | None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="统一检索 CLI（str→RAG，QueryIR→科研入组）")
+    parser.add_argument("action", nargs="?", choices=["search"], default=None,
+                        help="可选子命令（兼容 pipeline.run search 写法，可省略）")
     parser.add_argument("--query", default=None, help="自然语言问题 → RAG")
     parser.add_argument("--ir", default=None, help="入组 QueryIR：JSON 字符串或 @文件 → 科研入组")
     parser.add_argument("--type", choices=["kb", "cohort"], default=None, help="显式引擎（跳过路由）")

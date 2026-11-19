@@ -108,6 +108,22 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
         cwd=ROOT, capture_output=True, text=True, timeout=120, env=env)
 
 
+def test_cli_accepts_search_subcommand(demo_db):
+    """兼容 pipeline.run search 的写法：unified.cli search --query ... 与不带前缀等价。"""
+    ir = json.dumps({"include": [{"type": "age", "min": 18, "max": 75}]})
+    with_prefix = _run_cli("search", "--ir", ir, "--db", str(demo_db), "--json")
+    without = _run_cli("--ir", ir, "--db", str(demo_db), "--json")
+    assert with_prefix.returncode == 0, with_prefix.stderr[-800:]
+    assert json.loads(with_prefix.stdout)["engine"] == "cohort"
+    assert json.loads(with_prefix.stdout)["payload"] == json.loads(without.stdout)["payload"]
+
+
+def test_cli_bad_subcommand_rejected():
+    proc = _run_cli("ask", "--query", "x")
+    assert proc.returncode != 0
+    assert "invalid choice" in proc.stderr
+
+
 def test_cli_query_natural_language_needs_kb(demo_db):
     """自然语言 = RAG；KB 引擎缺失时明确报错提示，而不是静默跑 cohort。"""
     proc = _run_cli("--query", "星辰科技的创始人是谁？", "--mock",
