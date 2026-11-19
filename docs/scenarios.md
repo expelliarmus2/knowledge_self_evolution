@@ -246,3 +246,20 @@ result2 = unified.search("星辰科技的创始人是谁？", top_k=5)  # 自然
 - 场景一的问题是**沿关系链找答案**：用**图**存关系、**向量**存语义、PPR 排全局序；
 - 场景二的问题是**对每个患者做条件判定**：用**关系表**存事实、**SQL 集合语义**表达 include/exclude、三值逻辑处理缺失；
 - 两者共用**统一查询入口**与**结果信封**，但**物理存储各留各的**——门面统一，索引不合并。
+
+## 5. 评测闭环（怎么证明检索“做对了”)
+
+两个场景各自配一条**离线可重复的评测线**（`eval/run_eval.py`，gold 题集见 `eval/gold/`）：
+
+| 场景 | 评测命令 | 指标 | mock 下的基线（当前） |
+|---|---|---|---|
+| 知识库多跳问答 | `python -m eval.run_eval retrieval --corpus main` | Recall@k / MRR / 按 hop 分组 / 延迟 | main：Recall@1=0.80，MRR=0.875 |
+| 多跳合成语料 | `... --corpus multihop` | 同上（hop>=2 子集单独统计） | multihop：hop2 Recall@1=0.667 |
+| 科研入组筛查 | `python -m eval.run_eval cohort` | 三值混淆 / accuracy / macro-F1 / UNKNOWN 漏判率 | 30/30：accuracy=1.0，漏判率=0.0 |
+
+要点：
+
+1. **mock 测不出多跳**——离线端到端里 LLM 抽取是噪声，`hop_chunks` 恒为 0；多跳能力由 `tests/test_retrieval_golden_graph.py` 的**黄金图**（手工 `add_triple` 绕过抽取）单独验证，`--corpus multihop` 则负责给指标线喂跨文档两跳样本。
+2. **同一 gold 两种跑法**：`--mode mock` 是确定性回归基线（CI 用），`--mode real` 连真实 embedding/LLM 服务看抽取质量对多跳的增益（对比 `multihop` 的 hop2 Recall@1 从 0.667 能否提升）。
+3. **筛查指标里最该盯 `unknown_miss_rate`**：gold=UNKNOWN（数据缺失）却给出 PASS/FAIL，等于把缺失当证据——比普通误判更危险；当前 SQLite 引擎为 0.0。
+4. **真 PPR 依赖 scipy**：缺失时 dual_seed 自动退化为 personalization 排序（检索指标不变，但延迟从 ~7ms 升到 ~170ms 的真 PPR 才是线上主路径）；`requirements.txt` 已收录。
