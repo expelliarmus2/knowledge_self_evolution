@@ -268,3 +268,29 @@ result2 = unified.search("星辰科技的创始人是谁？", top_k=5)  # 自然
 2. **同一 gold 两种跑法**：`--mode mock` 是确定性回归基线（CI 用），`--mode real` 连真实 embedding/LLM 服务看抽取质量对多跳的增益（对比 `multihop` 的 hop2 Recall@1 从 0.667 能否提升）。
 3. **筛查指标里最该盯 `unknown_miss_rate`**：gold=UNKNOWN（数据缺失）却给出 PASS/FAIL，等于把缺失当证据——比普通误判更危险；当前 SQLite 引擎为 0.0。
 4. **真 PPR 依赖 scipy**：缺失时 dual_seed 自动退化为 personalization 排序（检索指标不变，但延迟从 ~7ms 升到 ~170ms 的真 PPR 才是线上主路径）；`requirements.txt` 已收录。
+
+## 6. 延迟构成（为什么第一次检索慢）
+
+`pipeline.run search` / `unified.cli` 单进程首次检索 ~0.9s，其余 ~8–20ms。用 cProfile 定位：
+
+| 阶段 | 首次耗时 | 稳态耗时 | 说明 |
+|---|---|---|---|
+| `scipy.sparse` 首次 import | **~0.78s** | 0 | networkx `pagerank` 走 `_pagerank_scipy` → `to_scipy_sparse_array` 触发 |
+| 其余（embed/recall/locate/hop/ppr） | ~0.1s | 8–20ms | 检索本身 |
+
+结论：**慢的是冷启动依赖加载，不是检索算法**。CLI 每次都是新进程 → 每次吃这 0.8s；
+`serve` 常驻或脚本内复用引擎时，第二次起 total ≈ 8ms（实测 run2=20ms、run3=8ms）。
+
+若真在意单次 CLI 延迟，可在 `config` 里设 `retrieval.chunkhop_mode: legacy` + `ppr_mode: personal`
+（跳过 scipy 的 pagerank 路径，延迟回落到 ~7ms），代价是失去真 PPR 的全局排序。
+
+## 7. 统一入口的输入形态约定
+
+`unified.cli --query` / `UnifiedEngine.search(query)`：
+
+| 输入 | 路由 | 引擎 |
+|---|---|---|
+| 自然语言字符串 | `kb` | ChunkHop 多跳检索（RAG） |
+| `QueryIR` 实例 / 含 `include` 的 IR dict / IR JSON 字符串 | `cohort` | SQLite 编译执行（科研入组） |
+| `--ir '<json>'` / `--ir @file.json` | `cohort`（显式） | 同上 |
+| `--type kb|cohort` | 显式覆盖 | — |

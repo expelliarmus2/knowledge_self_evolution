@@ -123,10 +123,14 @@ python -m unified.demo --mock
 # 6b. 统一检索 CLI：输入形态自动分流（str → RAG，QueryIR → 科研入组）
 #    自然语言问题 → 知识库多跳问答（RAG）
 python -m unified.cli --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+#    --query 也接受 IR JSON（统一形态分流）：含 include 的 JSON → cohort
+python -m unified.cli --query '{"include": [{"type": "age", "min": 18, "max": 75}]}'
 #    入组 QueryIR（JSON 或 @文件）→ 科研入组筛查（不依赖 KB）
 python -m unified.cli --ir '{"include": [{"type": "age", "min": 18, "max": 75}, {"type": "diagnosis", "disease_std": "肝细胞癌"}], "exclude": [{"type": "medication", "drug": "索拉非尼"}]}'
 python -m unified.cli --ir @/tmp/ir.json --json
 #    --type kb|cohort 可显式指定引擎；--db 指定入组库（缺库自动生成）
+#    延迟说明：单进程首次检索 ~0.9s（其中 ~0.78s 是 scipy.sparse 首次 import），
+#    第二次起 ~8-20ms；serve 常驻或复用引擎实例时无冷启动开销。
 
 # 6c. 科研入组筛查单独跑（Python 交互）
 python -c "

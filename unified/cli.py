@@ -37,13 +37,27 @@ def build_cohort_engine(cfg: Config, db: str | None, count: int | None):
 
 
 def load_ir(spec: str):
-    """--ir 参数：JSON 字符串 或 @文件路径 → QueryIR。"""
+    """--ir / --query 的 JSON 参数：JSON 字符串 或 @文件路径 → QueryIR。"""
     from cohort.query_ir import QueryIR
 
     raw = spec
     if spec.startswith("@"):
         raw = Path(spec[1:]).read_text(encoding="utf-8")
     return QueryIR.from_dict(json.loads(raw))
+
+
+def maybe_ir_from_query(text: str) -> object | None:
+    """--query 统一入口：字符串是可解析的入组 IR（含 include 的 JSON dict / @文件）时返回 QueryIR。
+
+    这样 ``--query`` 一个参数即可覆盖两种形态：
+
+    - ``--query '{"include": [...]}'`` → 科研入组（QueryIR）
+    - ``--query '自然语言问题'``        → RAG（ChunkHop）
+    """
+    try:
+        return load_ir(text) if text.strip().startswith(("{", "@")) else None
+    except (ValueError, json.JSONDecodeError, OSError):
+        return None
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="统一检索 CLI（str→RAG，QueryIR→科研入组）")
@@ -74,13 +88,13 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["KB_PATHS__PROCESSED_DIR"] = args.processed
     cfg = Config.load(overrides=overrides)
 
-    # 输入形态决定引擎：QueryIR → cohort；str → 自动路由（默认 kb/RAG）
+    # 输入形态决定引擎：QueryIR / IR JSON → cohort；纯自然语言 → kb（RAG）
     # --type 仅用于显式覆盖
     query_type = args.type
     if args.ir is not None:
         query: object = load_ir(args.ir)
     else:
-        query = args.query
+        query = maybe_ir_from_query(args.query) or args.query
 
     from unified.engine import EngineRegistry, UnifiedEngine
 
@@ -120,7 +134,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     # ---- 人读输出 ----
-    print(f"=== 统一检索（engine={result.engine}，输入形态={'QueryIR' if args.ir is not None else 'str'}）===")
+    from cohort.query_ir import QueryIR as _QueryIR
+
+    print(f"=== 统一检索（engine={result.engine}，输入形态={'QueryIR' if isinstance(query, _QueryIR) else 'str'}）===")
     p = result.payload
     if result.engine == "cohort":
         print(f"  汇总: {p['summary']}   引用日期: {p['reference_date']}")

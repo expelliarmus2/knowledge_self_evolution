@@ -161,6 +161,25 @@ def test_cli_ir_from_file(tmp_path, demo_db):
     assert json.loads(proc.stdout)["engine"] == "cohort"
 
 
+def test_cli_query_accepts_ir_json(demo_db):
+    """--query 也接受 IR JSON（统一形态分流）：dict IR → cohort。"""
+    ir = json.dumps({"include": [{"type": "age", "min": 18, "max": 75}]})
+    proc = _run_cli("--query", ir, "--db", str(demo_db), "--json")
+    assert proc.returncode == 0, proc.stderr[-800:]
+    out = json.loads(proc.stdout)
+    assert out["engine"] == "cohort"
+    assert out["payload"]["summary"]["total"] == 10
+
+
+def test_cli_query_natural_language_not_parsed_as_ir():
+    """普通自然语言（非 JSON）不应被误判为入组 IR。"""
+    from unified.cli import maybe_ir_from_query
+
+    assert maybe_ir_from_query("星辰科技的创始人是谁？") is None
+    assert maybe_ir_from_query("入组年龄 18-75 的患者") is None
+    assert maybe_ir_from_query('{"include": [{"type": "age", "min": 18}]}') is not None
+
+
 def test_cli_requires_query_or_ir():
     proc = _run_cli("--db", "/tmp/x.db")
     assert proc.returncode != 0
