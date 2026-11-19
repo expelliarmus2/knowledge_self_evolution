@@ -294,3 +294,14 @@ result2 = unified.search("星辰科技的创始人是谁？", top_k=5)  # 自然
 | `QueryIR` 实例 / 含 `include` 的 IR dict / IR JSON 字符串 | `cohort` | SQLite 编译执行（科研入组） |
 | `--ir '<json>'` / `--ir @file.json` | `cohort`（显式） | 同上 |
 | `--type kb|cohort` | 显式覆盖 | — |
+
+### 两场景延迟对比（同进程稳态）
+
+| 阶段 | KB 多跳问答 | 科研入组筛查 |
+|---|---|---|
+| 冷启动 | `scipy.sparse` import ~0.78s（仅首次） | 无（sqlite3 为内建 C 扩展） |
+| 稳态单次 | ~8–20ms | **~1.2ms**（复用连接后；未复用 ~9ms，其中 connect 占 5.8ms） |
+| 构成 | embed + 三路召回 + 定位 + CHUNK_HOP/PPR | IR→SQL 编译 0.004ms + SELECT ~1.1ms + 逐行判定 |
+
+`CohortEngine` 在实例内复用 SQLite 连接（`_connect()`），首次查询后即摊薄 connect 成本；
+若底层 db 被外部重建（`seed_database` 重跑），应 `close()` 或重建引擎实例。

@@ -49,10 +49,29 @@ class CohortEngine:
 
     def __init__(self, db_path: Path | str, *, seed_if_missing: bool = True, seed_count: int = 30):
         self.db_path = Path(db_path)
+        self._conn: sqlite3.Connection | None = None
         if seed_if_missing and not self.db_path.exists():
             from cohort.seed import seed_database
 
             seed_database(self.db_path, count=seed_count)
+
+    def _connect(self) -> sqlite3.Connection:
+        """进程内复用连接（connect/close 单次 ~5.8ms，SELECT 本身 ~1ms）。
+
+        注意：同一连接只能被单线程使用；统一门面 demo 为单线程场景。
+        若底层 db 被外部重建（seed_database 重跑），旧连接可能缓存旧 schema，
+        此时应重建引擎实例或调用 self.close()。
+        """
+        if self._conn is None:
+            conn = sqlite3.connect(str(self.db_path))
+            conn.row_factory = sqlite3.Row
+            self._conn = conn
+        return self._conn
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def describe(self) -> dict:
         return {
@@ -81,12 +100,14 @@ class CohortEngine:
 
         compiled: CompiledQuery = compile_ir(ir, reference_date)
 
-        conn = sqlite3.connect(str(self.db_path))
-        conn.row_factory = sqlite3.Row
+        conn = self._connect()
         try:
             rows = conn.execute(compiled.sql, compiled.params).fetchall()
-        finally:
-            conn.close()
+        except sqlite3.OperationalError:
+            # 底层 db 被外部重建导致 schema 失效：重连一次再试
+            self.close()
+            conn = self._connect()
+            rows = conn.execute(compiled.sql, compiled.params).fetchall()
 
         decisions = [compiled.decide(row) for row in rows]
         return CohortResult(
