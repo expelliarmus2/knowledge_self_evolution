@@ -34,6 +34,12 @@ class Condition:
     type: str
     params: dict[str, Any] = field(default_factory=dict)
 
+    @classmethod
+    def from_dict(cls, data: Any) -> "Condition":
+        if isinstance(data, Condition):
+            return data
+        return cls(data.get("type"), {k: v for k, v in data.items() if k != "type"})
+
     def get(self, key: str, default: Any = None) -> Any:
         return self.params.get(key, default)
 
@@ -80,18 +86,19 @@ class QueryIR:
     exclude: list[Condition] = field(default_factory=list)
     reference_date: str | None = None
 
+    def __post_init__(self) -> None:
+        """容错：允许直接传 dict 条件（等价于 from_dict 的子集）。"""
+        self.include = [c if isinstance(c, Condition) else Condition.from_dict(c)
+                        for c in self.include]
+        self.exclude = [c if isinstance(c, Condition) else Condition.from_dict(c)
+                        for c in self.exclude]
+
     @classmethod
     def from_dict(cls, data: Any) -> "QueryIR":
         if not isinstance(data, dict):
             raise ValueError("入组 IR 必须是 dict")
-        include = [
-            Condition(c.get("type"), {k: v for k, v in c.items() if k != "type"})
-            for c in data.get("include", [])
-        ]
-        exclude = [
-            Condition(c.get("type"), {k: v for k, v in c.items() if k != "type"})
-            for c in data.get("exclude", [])
-        ]
+        include = [Condition.from_dict(c) for c in data.get("include", [])]
+        exclude = [Condition.from_dict(c) for c in data.get("exclude", [])]
         ir = cls(include=include, exclude=exclude, reference_date=data.get("reference_date"))
         ir.validate()
         return ir

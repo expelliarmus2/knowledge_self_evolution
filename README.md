@@ -120,7 +120,15 @@ KB_PATHS__PROCESSED_DIR=data/processed_demo_cn python -m unified.demo --mock --j
 # 只跑入组筛查（KB 不可用自动降级跳过）：
 python -m unified.demo --mock
 
-# 6b. 科研入组筛查单独跑（Python 交互）
+# 6b. 统一检索 CLI：输入形态自动分流（str → RAG，QueryIR → 科研入组）
+#    自然语言问题 → 知识库多跳问答（RAG）
+python -m unified.cli --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+#    入组 QueryIR（JSON 或 @文件）→ 科研入组筛查（不依赖 KB）
+python -m unified.cli --ir '{"include": [{"type": "age", "min": 18, "max": 75}, {"type": "diagnosis", "disease_std": "肝细胞癌"}], "exclude": [{"type": "medication", "drug": "索拉非尼"}]}'
+python -m unified.cli --ir @/tmp/ir.json --json
+#    --type kb|cohort 可显式指定引擎；--db 指定入组库（缺库自动生成）
+
+# 6c. 科研入组筛查单独跑（Python 交互）
 python -c "
 from cohort.engine import CohortEngine
 from cohort.seed import DEMO_IR

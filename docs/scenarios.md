@@ -239,6 +239,11 @@ python -m unified.demo
 # 同一入口，两条查询（unified/demo.py）
 result1 = unified.search(DEMO_IR)                    # dict IR → 路由 cohort
 result2 = unified.search("星辰科技的创始人是谁？", top_k=5)  # 自然语言 → 路由 kb
+
+# 统一检索 CLI（unified/cli.py）：按输入形态自动分流
+#   python -m unified.cli --query "星辰科技的创始人是谁？" --mock --processed data/processed_demo_cn
+#   python -m unified.cli --ir '{"include": [...]}' --db data/cohort/demo.db
+# 路由规则：QueryIR 实例 / 入组 dict → cohort；str 自然语言 → kb（RAG）
 ```
 
 ## 4. 结论

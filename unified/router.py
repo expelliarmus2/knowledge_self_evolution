@@ -1,8 +1,16 @@
-"""查询路由：query_type 显式优先；否则按关键词 / 输入形态选引擎。"""
+"""查询路由：query_type 显式优先；否则按输入形态（QueryIR/逻辑表达式/dict IR/关键词）选引擎。
+
+输入形态约定：
+
+- ``QueryIR`` 实例 / 入组 IR dict → cohort（科研入组）
+- ``str`` 自然语言 → 含入组关键词时 cohort，否则默认 kb（RAG）
+"""
 
 from __future__ import annotations
 
 from typing import Any, Optional
+
+from cohort.query_ir import QueryIR
 
 DEFAULT_COHORT_KEYWORDS = (
     "入组", "筛查", "符合", "年龄", "患者", "用药", "排除", "纳入", "队列", "受试者",
@@ -23,8 +31,8 @@ class Router:
                 raise KeyError(f"未注册的 query_type: {query_type}；已注册: {names}")
             return query_type
 
-        # 结构化 IR（dict）几乎只可能来自入组场景
-        if isinstance(query, dict) and "cohort" in names:
+        # 结构化 IR（QueryIR 实例或入组 dict）→ 科研入组
+        if isinstance(query, (QueryIR, dict)) and "cohort" in names:
             return "cohort"
 
         text = str(query)
