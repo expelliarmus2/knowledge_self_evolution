@@ -1,0 +1,15 @@
+{"question": "星辰科技的创始人是谁？", "answer_docs": ["doc_star_001"], "hop": 1, "corpus": "main", "note": "单跳事实：星辰科技→林远"}
+{"question": "星辰科技获得哪家机构的投资？", "answer_docs": ["doc_star_001"], "hop": 1, "corpus": "main", "note": "单跳事实：云峰资本"}
+{"question": "星辰科技的首席科学家是谁？", "answer_docs": ["doc_star_001"], "hop": 1, "corpus": "main", "note": "实体属性检索：周敏"}
+{"question": "星辰科技成立于哪一年？", "answer_docs": ["doc_star_001"], "hop": 1, "corpus": "main", "note": "单跳事实：2018"}
+{"question": "星图平台的客户华西医院位于哪个城市？", "answer_docs": ["doc_star_002"], "hop": 2, "corpus": "main", "note": "同文档两步推理：星图平台→华西医院→成都"}
+{"question": "HippoRAG2 是什么的升级版本？", "answer_docs": ["doc_kg_001"], "hop": 1, "corpus": "main", "note": "单跳事实：HippoRAG"}
+{"question": "知识图谱由哪家公司提出？", "answer_docs": ["doc_kg_001"], "hop": 1, "corpus": "main", "note": "单跳事实：谷歌"}
+{"question": "知识库自演进是指什么？", "answer_docs": ["doc_evo_001"], "hop": 1, "corpus": "main", "note": "定义型检索"}
+{"question": "EvoGraph-R1 是什么框架？", "answer_docs": ["doc_evo_001"], "hop": 1, "corpus": "main", "note": "定义型检索：图演进强化学习"}
+{"question": "ChunkHop 通过什么在 chunk 之间扩散检索信号？", "answer_docs": ["doc_rag_001"], "hop": 1, "corpus": "main", "note": "机制型检索：共享实体"}
+{"question": "潮汐引擎的技术合作伙伴位于哪个城市？", "answer_docs": ["doc_m4"], "hop": 2, "corpus": "multihop", "note": "跨文档两跳：潮汐引擎→青禾实验室(doc_m3)→南京(doc_m4)"}
+{"question": "沈知远创办的公司旗下产品是什么？", "answer_docs": ["doc_m2"], "hop": 2, "corpus": "multihop", "note": "跨文档两跳：沈知远→蓝鲸科技(doc_m1)→潮汐引擎(doc_m2)"}
+{"question": "蓝鲸科技产品的技术支持由哪个机构提供？", "answer_docs": ["doc_m3"], "hop": 2, "corpus": "multihop", "note": "跨文档两跳：蓝鲸科技→潮汐引擎→青禾实验室"}
+{"question": "青禾实验室位于哪里？", "answer_docs": ["doc_m4"], "hop": 1, "corpus": "multihop", "note": "单跳对照：南京"}
+{"question": "蓝鲸科技位于哪个城市？", "answer_docs": ["doc_m1"], "hop": 1, "corpus": "multihop", "note": "单跳对照：杭州"}

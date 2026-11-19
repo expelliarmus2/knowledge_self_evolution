@@ -62,10 +62,16 @@ knowledge_self_evolution/
 ├── docs/                    # 场景文档
 │   ├── scenarios.md         #   场景 A：两场景问题 + 图/存储结构展示
 │   └── storage_format_scenarios.md  # 场景 B：四层次框架下的存储选型
+├── eval/                    # 评测：gold 题集 + 指标（Recall@k/MRR/三值混淆）
+│   ├── metrics.py           #   纯函数指标（无外部依赖）
+│   ├── run_eval.py          #   CLI：retrieval / cohort，mock 或 real 模式
+│   └── gold/                #   retrieval_gold / multihop_docs / cohort_gold
 ├── data/raw/                # 输入文档（.jsonl：{doc_id, text}；或 .txt/.md 每文件一篇）
 ├── data/processed/          # 产物：graph.pkl / graph_export.json / *.faiss / build_report.json
 ├── data/cohort/demo.db      # 科研入组 demo SQLite（seed 自动生成）
-├── tests/                   # test_smoke.py + test_cohort_engine.py + test_unified_facade.py
+├── tests/                   # test_smoke / test_cohort_engine / test_unified_facade
+│                           #   + test_retrieval_quality(质量) + test_retrieval_golden_graph(黄金图)
+│                           #   + test_eval_metrics(评测指标)
 └── utils/                   # config(yaml+环境变量覆盖) / prompts / runtime(并行池) / text(解析清洗)
 ```
 
@@ -104,8 +110,15 @@ python -m pytest tests/ -q
 python -m cohort.seed --count 30   # 生成合成结构化患者 demo 库
 python -m unified.demo --json      # 统一入口跑两条查询（KB 服务未启动时自动降级跳过 KB）
 
+# 7. 评测（离线 mock 确定性；real 模式需真实 embedding/LLM 服务）
+python -m eval.run_eval retrieval --corpus main --mode mock
+python -m eval.run_eval retrieval --corpus multihop --mode mock   # 多跳合成语料
+python -m eval.run_eval cohort                                   # 30 例三值混淆（accuracy/F1/UNKNOWN 漏判率）
+
 > **场景文档**：两个检索场景的问题、图/存储结构展示 → [docs/scenarios.md](docs/scenarios.md)；
 > 用“查询语言/逻辑模型/执行引擎/物理存储”四层次解释存储选型 → [docs/storage_format_scenarios.md](docs/storage_format_scenarios.md)。
+> **检索测试策略**：四层（纯函数 → 黄金图组件 → mock 端到端质量 → 指标评测），
+> 详见 `tests/test_retrieval_quality.py` 与 `tests/test_retrieval_golden_graph.py` 的模块 docstring。
 ```
 
 ## 配置（config/default.yaml）

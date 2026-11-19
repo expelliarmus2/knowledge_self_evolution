@@ -1,5 +1,6 @@
 numpy>=1.24
 networkx>=3.0
+scipy>=1.10              # dual_seed 真 PPR（缺失时自动退化为 personalization 排序）
 faiss-cpu>=1.7.4
 openai>=1.30
 PyYAML>=6.0

@@ -1,0 +1,30 @@
+{"patient_id": 1, "expected": "PASS", "reason": "原型：全条件命中"}
+{"patient_id": 2, "expected": "FAIL", "reason": "原型：1940 年生，年龄>75"}
+{"patient_id": 3, "expected": "FAIL", "reason": "原型：诊断肝硬化非肝细胞癌"}
+{"patient_id": 4, "expected": "FAIL", "reason": "原型：索拉非尼已用（排除条件）"}
+{"patient_id": 5, "expected": "UNKNOWN", "reason": "原型：AFP 检查值缺失"}
+{"patient_id": 6, "expected": "UNKNOWN", "reason": "原型：肝细胞癌确诊但诊断时间缺失"}
+{"patient_id": 7, "expected": "FAIL", "reason": "填充：肝硬化 + 索拉非尼已用"}
+{"patient_id": 8, "expected": "FAIL", "reason": "填充：乙型肝炎非肝细胞癌"}
+{"patient_id": 9, "expected": "PASS", "reason": "填充：肝细胞癌、AFP>400、无排除用药"}
+{"patient_id": 10, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 11, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 12, "expected": "PASS", "reason": "填充：全条件命中"}
+{"patient_id": 13, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 14, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 15, "expected": "UNKNOWN", "reason": "填充：AFP 缺失"}
+{"patient_id": 16, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 17, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 18, "expected": "PASS", "reason": "填充：全条件命中"}
+{"patient_id": 19, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 20, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 21, "expected": "FAIL", "reason": "填充：索拉非尼已用"}
+{"patient_id": 22, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 23, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 24, "expected": "PASS", "reason": "填充：全条件命中"}
+{"patient_id": 25, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 26, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 27, "expected": "PASS", "reason": "填充：全条件命中"}
+{"patient_id": 28, "expected": "FAIL", "reason": "填充：肝硬化"}
+{"patient_id": 29, "expected": "FAIL", "reason": "填充：乙型肝炎"}
+{"patient_id": 30, "expected": "UNKNOWN", "reason": "填充：AFP 缺失"}

@@ -18,3 +18,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# ===== 评测报告（产物，不入库）=====
+eval/reports/
