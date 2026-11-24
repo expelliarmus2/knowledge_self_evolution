@@ -1,0 +1,43 @@
+{
+  "retrieval": {
+    "overall": {
+      "n": 5,
+      "recall@1": 0.8,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "mrr": 0.8667,
+      "latency_ms_avg": 169.76,
+      "latency_ms_max": 820.28,
+      "misses": []
+    },
+    "by_hop": {
+      "hop1": {
+        "n": 2,
+        "recall@1": 1.0,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "mrr": 1.0,
+        "latency_ms_avg": 7.91,
+        "latency_ms_max": 9.33,
+        "misses": []
+      },
+      "hop2": {
+        "n": 3,
+        "recall@1": 0.6667,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "mrr": 0.7778,
+        "latency_ms_avg": 277.66,
+        "latency_ms_max": 820.28,
+        "misses": []
+      }
+    },
+    "multihop_coverage": "3 条 hop>=2 样本",
+    "corpus": "multihop",
+    "mode": "mock",
+    "graph_version": 1314
+  }
+}
