@@ -64,11 +64,11 @@ def _build_retriever(cfg: Config, processed: Path):
     return graph, retriever, llm
 
 
-def _run_eval(retriever, graph, questions: list, ev, top_k: int):
+def _run_eval(retriever, graph, questions: list, ev, top_k: int, tag: str = "eval"):
     """在给定题集上检索，产出评测 records。"""
     from experiments.evograph.evaluator import rank_chunks
     records = []
-    for q in questions:
+    for i, q in enumerate(questions, start=1):
         try:
             res = retriever.search(q["question"], top_k=top_k)
         except Exception as exc:  # 单题失败不中断（记录原因）
@@ -81,6 +81,8 @@ def _run_eval(retriever, graph, questions: list, ev, top_k: int):
             "support_docs": ev.supporting_doc_ids(q),
             "graph_version": graph.version,
         })
+        if i % 50 == 0 or i == len(questions):
+            print(f"[{tag}] {i}/{len(questions)}", flush=True)
     return records
 
 
@@ -145,25 +147,29 @@ def main(argv=None) -> int:
     baseline_graph, baseline_ret, _ = _build_retriever(cfg, processed)
     v0 = baseline_graph.version
     t0 = time.time()
-    base_records = _run_eval(baseline_ret, baseline_graph, [qmap[i] for i in te_ids], split, args.top_k)
+    print(f"[baseline] 开始 {len(te_ids)} 题检索", flush=True)
+    base_records = _run_eval(baseline_ret, baseline_graph, [qmap[i] for i in te_ids], split, args.top_k, tag="baseline")
     base_time = time.time() - t0
     base = score(base_records)
 
     evolved_graph, evolved_ret, evo_llm = _build_retriever(cfg, processed)
     evolver = Evolver(evolved_graph, evo_llm, mode=args.mode, max_write_per_q=args.max_write)
     t0 = time.time()
-    for q in (qmap[i] for i in ev_ids):
+    for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
         res = evolved_ret.search(q["question"], top_k=args.top_k)
         # 进化信号 = 检索命中三元组（加权路径）∪ 从 chunk 文本抽取的新三元组（增量路径）
         candidates = [dict(t) for t in (res.triples or [])]
         candidates += evolver.extract(q["question"], res.chunks)
         useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
         evolver.write_back(q["question"], q["id"], useful)
+        if ei % 50 == 0 or ei == len(ev_ids):
+            print(f"[evolve] {ei}/{len(ev_ids)} written={evolver.stats.written}", flush=True)
     evolve_time = time.time() - t0
     v1 = evolved_graph.version
 
     t0 = time.time()
-    evo_records = _run_eval(evolved_ret, evolved_graph, [qmap[i] for i in te_ids], split, args.top_k)
+    print(f"[evolved] 开始 {len(te_ids)} 题检索", flush=True)
+    evo_records = _run_eval(evolved_ret, evolved_graph, [qmap[i] for i in te_ids], split, args.top_k, tag="evolved")
     evo_time = time.time() - t0
     evo = score(evo_records)
 
