@@ -43,6 +43,7 @@ class DualSeedChunkHop:
         self.hops = int(cfg.get("retrieval.dual_hops", 2))
         self.width = int(cfg.get("retrieval.dual_hop_width", 50))
         self.alpha = float(cfg.get("retrieval.ppr_alpha", 0.6))
+        self.evolved_boost = float(cfg.get("retrieval.evolved_boost", 1.0))
         self.decay = float(cfg.get("retrieval.hop_decay", 0.5))
         self.hop_boost = float(cfg.get("retrieval.hop_chunk_boost", 1.0))
         self.min_seed = float(cfg.get("retrieval.dual_min_seed", 0.0))
@@ -279,6 +280,9 @@ class DualSeedChunkHop:
                 other = v if u == e else u
                 if other in ents and pg.has_node(other):
                     w = 0.5 + 0.5 * (entity_scores.get(other, 0.0) / max_ts)
+                    # 自进化边加成：LLM 写回的知识应在 PPR 传播中更强
+                    if (data.get("meta") or {}).get("evolved"):
+                        w *= self.evolved_boost
                     pg.add_edge(e, other, weight=w)
 
         # 在线 chunkhop 边

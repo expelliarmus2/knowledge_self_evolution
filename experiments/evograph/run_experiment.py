@@ -27,6 +27,29 @@ def _qkey(q: dict) -> str:
     return q["id"]
 
 
+def _random_write(graph, seed: int, n_goal: int = 800) -> int:
+    """对照组：随机实体对 + 关系池写边（weight=0.5 + evolved 标记，与 evolved 臂同构）。"""
+    import random
+
+    rng = random.Random(seed)
+    entities = [e for e in graph.g.nodes if graph.g.nodes[e].get("type") == "entity"]
+    rels = ["related_to", "born_in", "located_in", "influenced_by", "part_of",
+            "known_for", "member_of", "created_by", "published_in", "has_award"]
+    written = 0
+    for _ in range(n_goal * 4):  # 多试几次以凑够 n_goal 条真新边
+        if written >= n_goal:
+            break
+        h, t = rng.sample(entities, 2)
+        r = rng.choice(rels)
+        if graph.g.has_edge(h, t, key=r):
+            continue
+        graph.add_triple(h, r, t, weight=0.5,
+                         meta={"evolved": True, "source_qid": "random-write",
+                               "confidence": 0.5, "is_new": True})
+        written += 1
+    return written
+
+
 def _decomposition_text(q: dict) -> str:
     parts = []
     for s in q.get("question_decomposition") or []:
@@ -94,6 +117,8 @@ def main(argv=None) -> int:
     ap.add_argument("--workspace", default=str(ART / "workspace"), help="实验工作目录")
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--max-write", type=int, default=8, help="每题最多回写三元组数")
+    ap.add_argument("--arm", choices=["evolved", "shuffle", "random-write"], default="evolved",
+                    help="evolved=LLM评价写回(主实验)；shuffle=evolve/eval 集对调；random-write=随机写等量边")
     ap.add_argument("--shuffle", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args(argv)
@@ -128,6 +153,8 @@ def main(argv=None) -> int:
         os.environ["KB_PATHS__PROCESSED_DIR"] = str(processed)
     ev_ids = split.evolve_ids[: args.limit] if args.limit else split.evolve_ids
     te_ids = split.eval_ids[: args.limit] if args.limit else split.eval_ids
+    if args.arm == "shuffle":
+        ev_ids, te_ids = te_ids, ev_ids      # 对调：用 eval 集做进化、evolve 集做评测（交叉验证）
     qmap = {q["id"]: q for q in split.questions}
 
     # chunk_id → doc_id 映射
@@ -143,7 +170,7 @@ def main(argv=None) -> int:
         "mode": args.mode, "limit": args.limit, "top_k": args.top_k,
         "n_evolve": len(ev_ids), "n_eval": len(te_ids),
         "corpus_docs": len(split.doc_meta), "corpus_chunks": len(doc_of_chunk),
-        "split_overlap": _title_overlap(split, split.evolve_ids, split.eval_ids),
+        "split_overlap": _title_overlap(split, ev_ids, te_ids),
         "doc_coverage": getattr(split, "doc_coverage", None),
         "shuffle": args.shuffle, "seed": args.seed,
     }
@@ -159,15 +186,21 @@ def main(argv=None) -> int:
     evolved_graph, evolved_ret, evo_llm = _build_retriever(cfg, processed)
     evolver = Evolver(evolved_graph, evo_llm, mode=args.mode, max_write_per_q=args.max_write)
     t0 = time.time()
-    for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
-        res = evolved_ret.search(q["question"], top_k=args.top_k)
-        # 进化信号 = 检索命中三元组（加权路径）∪ 从 chunk 文本抽取的新三元组（增量路径）
-        candidates = [dict(t) for t in (res.triples or [])]
-        candidates += evolver.extract(q["question"], res.chunks)
-        useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
-        evolver.write_back(q["question"], q["id"], useful)
-        if ei % 50 == 0 or ei == len(ev_ids):
-            print(f"[evolve] {ei}/{len(ev_ids)} written={evolver.stats.written}", flush=True)
+    if args.arm == "random-write":
+        # 对照臂：不评价，随机写与 evolved 臂等量的边（同 weight=0.5 + evolved 标记）
+        n_random = _random_write(evolved_graph, args.seed, n_goal=800)
+        evolver.stats.written = n_random
+        print(f"[random-write] 写入 {n_random} 条随机边", flush=True)
+    else:
+        for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
+            res = evolved_ret.search(q["question"], top_k=args.top_k)
+            # 进化信号 = 检索命中三元组（加权路径）∪ 从 chunk 文本抽取的新三元组（增量路径）
+            candidates = [dict(t) for t in (res.triples or [])]
+            candidates += evolver.extract(q["question"], res.chunks)
+            useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
+            evolver.write_back(q["question"], q["id"], useful)
+            if ei % 50 == 0 or ei == len(ev_ids):
+                print(f"[evolve] {ei}/{len(ev_ids)} written={evolver.stats.written}", flush=True)
     evolve_time = time.time() - t0
     v1 = evolved_graph.version
 
@@ -189,7 +222,7 @@ def main(argv=None) -> int:
         "comparison": compare(to_dict(base), to_dict(evo)),
     }
 
-    tag = f"{args.mode}_n{len(te_ids)}"
+    tag = f"{args.mode}_n{len(te_ids)}_{args.arm}"
     (ART / f"split_{tag}.json").write_text(json.dumps({
         "evolve_ids": ev_ids, "eval_ids": te_ids,
         "overlap": meta["split_overlap"],

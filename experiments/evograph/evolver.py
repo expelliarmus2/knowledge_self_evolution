@@ -69,6 +69,14 @@ class Evolver:
         if not texts:
             return []
         triples = self._extract_llm(question, texts) if self.mode != "mock" else self._extract_heuristic(texts)
+        # 来源归属：优先包含 head/tail 文本的 chunk（证据 chunk；无则取分数最高者）
+        scored = sorted((c for c in chunks if c.get("text")), key=lambda c: -float(c.get("score", 0)))
+        def _source_of(h: str, t: str) -> Optional[str]:
+            for c in scored:
+                ct = c.get("text", "")
+                if h in ct or t in ct:
+                    return c.get("chunk_id")
+            return scored[0].get("chunk_id") if scored else None
         out, seen = [], set()
         for h, r, t in triples:
             h, r, t = str(h).strip(), str(r).strip(), str(t).strip()
@@ -81,7 +89,8 @@ class Evolver:
             # 只保留图谱尚未包含的边：同端点同 relation 已存在则走“加权”路径，不进候选
             if not self.graph.g.has_edge(h, t, key=r):
                 out.append({"head": h, "relation": r, "tail": t,
-                            "confidence": 0.5, "is_new": True})
+                            "confidence": 0.5, "is_new": True,
+                            "source_chunk": _source_of(h, t)})
         return out
 
     def _extract_llm(self, question: str, texts: List[str]) -> List[tuple]:
@@ -173,6 +182,8 @@ class Evolver:
                 item = {"head": h, "relation": r, "tail": tail, "confidence": 0.6}
                 if t.get("is_new"):
                     item["is_new"] = True
+                if t.get("source_chunk"):
+                    item["source_chunk"] = t["source_chunk"]
                 useful.append(item)
         return useful
 
@@ -200,6 +211,8 @@ class Evolver:
             item = {"head": key[0], "relation": key[1], "tail": key[2], "confidence": 0.8}
             if cand.get("is_new"):
                 item["is_new"] = True
+            if cand.get("source_chunk"):
+                item["source_chunk"] = cand["source_chunk"]
             out.append(item)
         return out
 
@@ -218,9 +231,11 @@ class Evolver:
             is_new = not self.graph.g.has_edge(h, tail, key=r) and not self.graph.g.has_edge(tail, h, key=r)
             self.graph.add_triple(
                 h, r, tail,
+                chunk_id=t.get("source_chunk"),
                 weight=0.5,
                 meta={"evolved": True, "source_qid": qid, "confidence": t.get("confidence", 0.5),
-                      "is_new": bool(t.get("is_new", False)) or is_new},
+                      "is_new": bool(t.get("is_new", False)) or is_new,
+                      "source_chunk": t.get("source_chunk")},
             )
             if is_new:
                 self.stats.written += 1

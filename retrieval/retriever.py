@@ -266,12 +266,16 @@ class Retriever:
         node_set |= {c for c in chunk_nodes if self.graph.g.has_node(c)}
 
         # 三元组边（实体-实体）
+        evolved_boost = float(self.cfg.get("retrieval.evolved_boost", 1.0))
         for t in triple_hits:
             h = self.graph.canonical(t["head"])
             tl = self.graph.canonical(t["tail"])
             if h in node_set and tl in node_set and h != tl:
                 key = (min(h, tl), max(h, tl))
-                edge_weights[key] = edge_weights.get(key, 0.0) + max(0.05, t.get("score", 0.0))
+                w = max(0.05, t.get("score", 0.0))
+                if (t.get("meta") or {}).get("evolved"):
+                    w *= evolved_boost
+                edge_weights[key] = edge_weights.get(key, 0.0) + w
 
         # text_conclude 边（实体-chunk）
         for cid in [c for c in chunk_nodes if self.graph.g.has_node(c)]:
