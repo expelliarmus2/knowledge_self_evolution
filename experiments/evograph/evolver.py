@@ -132,15 +132,31 @@ class Evolver:
         return out
 
     # ---------- 评价 ----------
+    # 单次评价送入 LLM 的候选上限：新边全收（真正的知识增量），图内边只取高分段
+    MAX_NEW_CANDIDATES = 40
+    MAX_GRAPH_CANDIDATES = 60
+
     def judge(self, question: str, decomposition: str, triples: List[dict]) -> List[dict]:
         """返回判定有用的三元组子集（带 confidence）。"""
         self.stats.evaluated += 1
         self.stats.candidates += len(triples)
         if not triples:
             return []
+        triples = self._trim_candidates(triples)
         if self.mode == "mock":
             return self._judge_heuristic(question, triples)
         return self._judge_llm(question, decomposition, triples)
+
+    def _trim_candidates(self, triples: List[dict]) -> List[dict]:
+        """裁剪候选：新边优先全收，图内边按 score 取头部。
+
+        否则大图单题可捞出数千条三元组，prompt 超长后 LLM 只见前段（多为图内边），
+        抽取出的新边被挤掉，自进化退化为"只加权旧边"。
+        """
+        new = [t for t in triples if t.get("is_new")]
+        old = [t for t in triples if not t.get("is_new")]
+        old.sort(key=lambda x: float(x.get("score", 0) or 0), reverse=True)
+        return new[: self.MAX_NEW_CANDIDATES] + old[: self.MAX_GRAPH_CANDIDATES]
 
     def _judge_heuristic(self, question: str, triples: List[dict]) -> List[dict]:
         """确定性：候选三元组的 head/tail 与问题共享 ≥1 个词元即判有用。
@@ -174,12 +190,17 @@ class Evolver:
         except Exception:
             return []
         # 过滤：只接受候选集合内（允许小写/引号差异）
-        cand_keys = {(str(t["head"]), str(t["relation"]), str(t["tail"])) for t in triples}
+        cand_map = {(str(t["head"]), str(t["relation"]), str(t["tail"])): t for t in triples}
         out = []
         for u in useful:
             key = (str(u.get("head", "")), str(u.get("relation", "")), str(u.get("tail", "")))
-            if key in cand_keys:
-                out.append({"head": key[0], "relation": key[1], "tail": key[2], "confidence": 0.8})
+            cand = cand_map.get(key)
+            if cand is None:
+                continue
+            item = {"head": key[0], "relation": key[1], "tail": key[2], "confidence": 0.8}
+            if cand.get("is_new"):
+                item["is_new"] = True
+            out.append(item)
         return out
 
     # ---------- 回写 ----------

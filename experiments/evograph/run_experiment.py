@@ -102,19 +102,23 @@ def main(argv=None) -> int:
     workspace = Path(args.workspace)
     workspace.mkdir(parents=True, exist_ok=True)
 
-    from experiments.evograph.data import build_mock_kb, load_split
+    from experiments.evograph.data import build_mock_kb, load_split, load_split_processed
     from experiments.evograph.evaluator import compare, score, to_dict
     from experiments.evograph.evolver import Evolver
 
     # --limit 同时收缩语料（只取前 2N 题的段落），否则冒烟也要为 11656 段建库
-    split = load_split(DEV, shuffle=args.shuffle, seed=args.seed,
-                       max_questions=2 * args.limit if args.limit else None)
-    ev_ids = split.evolve_ids[: args.limit] if args.limit else split.evolve_ids
-    te_ids = split.eval_ids[: args.limit] if args.limit else split.eval_ids
-    qmap = {q["id"]: q for q in split.questions}
-
-    # 语料构建 / 复用
-    if args.mode == "mock":
+    if args.mode == "real":
+        processed = Path(args.processed or "data/processed_musique")
+        split = load_split_processed(
+            DEV, Path("data/raw/corpus_musique.json"), processed / "chunks.jsonl",
+            shuffle=args.shuffle, seed=args.seed,
+            max_questions=2 * args.limit if args.limit else None)
+        cfg = Config.load(overrides={"paths": {"processed_dir": str(processed)}})
+        os.environ["KB_PATHS__PROCESSED_DIR"] = str(processed)
+    else:
+        split = load_split(DEV, shuffle=args.shuffle, seed=args.seed,
+                           max_questions=2 * args.limit if args.limit else None)
+        # 语料构建 / 复用
         processed = build_mock_kb(split, workspace, Config.load())
         cfg = Config.load(overrides={
             "embedding": {"provider": "mock", "dim": 256},
@@ -122,10 +126,9 @@ def main(argv=None) -> int:
             "paths": {"processed_dir": str(processed)},
         })
         os.environ["KB_PATHS__PROCESSED_DIR"] = str(processed)
-    else:
-        processed = Path(args.processed or "data/processed_musique")
-        cfg = Config.load(overrides={"paths": {"processed_dir": str(processed)}})
-        os.environ["KB_PATHS__PROCESSED_DIR"] = str(processed)
+    ev_ids = split.evolve_ids[: args.limit] if args.limit else split.evolve_ids
+    te_ids = split.eval_ids[: args.limit] if args.limit else split.eval_ids
+    qmap = {q["id"]: q for q in split.questions}
 
     # chunk_id → doc_id 映射
     doc_of_chunk: dict = {}
@@ -141,6 +144,7 @@ def main(argv=None) -> int:
         "n_evolve": len(ev_ids), "n_eval": len(te_ids),
         "corpus_docs": len(split.doc_meta), "corpus_chunks": len(doc_of_chunk),
         "split_overlap": _title_overlap(split, split.evolve_ids, split.eval_ids),
+        "doc_coverage": getattr(split, "doc_coverage", None),
         "shuffle": args.shuffle, "seed": args.seed,
     }
 
