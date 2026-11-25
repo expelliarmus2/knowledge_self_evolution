@@ -193,12 +193,16 @@ def main(argv=None) -> int:
         print(f"[random-write] 写入 {n_random} 条随机边", flush=True)
     else:
         for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
-            res = evolved_ret.search(q["question"], top_k=args.top_k)
-            # 进化信号 = 检索命中三元组（加权路径）∪ 从 chunk 文本抽取的新三元组（增量路径）
-            candidates = [dict(t) for t in (res.triples or [])]
-            candidates += evolver.extract(q["question"], res.chunks)
-            useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
-            evolver.write_back(q["question"], q["id"], useful)
+            try:
+                res = evolved_ret.search(q["question"], top_k=args.top_k)
+                # 进化信号 = 检索命中三元组（加权路径）∪ 从 chunk 文本抽取的新三元组（增量路径）
+                candidates = [dict(t) for t in (res.triples or [])]
+                candidates += evolver.extract(q["question"], res.chunks)
+                useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
+                evolver.write_back(q["question"], q["id"], useful)
+            except Exception as err:
+                # 单题失败（LLM 内容审核/网络抖动等）跳过，不中断整轮
+                print(f"[evolve] {ei} 失败跳过: {type(err).__name__}: {err}", flush=True)
             if ei % 50 == 0 or ei == len(ev_ids):
                 print(f"[evolve] {ei}/{len(ev_ids)} written={evolver.stats.written}", flush=True)
     evolve_time = time.time() - t0
