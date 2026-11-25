@@ -83,7 +83,21 @@ def run_ircot(question: str, tools: Tools, llm, prompts, cfg) -> IrcotResult:
             [e.get("name") for e in r["entities"]]
             + [x.get("entity") for x in r.get("selected_entities", [])]
         )
-        steps.append({"sentence": sentence, "n_new": n_new, "triples": n_tri, "stop": ""})
+        steps.append({
+            "sentence": sentence, "n_new": n_new, "triples": n_tri, "stop": "",
+            # 方式A轨迹优化：记录本轮证据（chunk 预览 + 命中三元组），供轨迹级评价/抽取
+            "step_chunks": [
+                {"chunk_id": c.get("chunk_id"), "doc_id": c.get("doc_id"),
+                 "score": c.get("score"), "source": c.get("source"),
+                 "text": (c.get("text") or "")[:800]}
+                for c in (r.get("chunks") or [])[:k_step]
+            ],
+            "step_triples": [
+                {"head": t.get("head"), "relation": t.get("relation"),
+                 "tail": t.get("tail"), "score": t.get("score", 0.0)}
+                for t in (r.get("triples") or [])[:12]
+            ],
+        })
 
         if n_new == 0 and n_tri == 0:
             consecutive_stale += 1

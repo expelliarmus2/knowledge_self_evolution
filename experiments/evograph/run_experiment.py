@@ -117,8 +117,9 @@ def main(argv=None) -> int:
     ap.add_argument("--workspace", default=str(ART / "workspace"), help="实验工作目录")
     ap.add_argument("--top-k", type=int, default=10)
     ap.add_argument("--max-write", type=int, default=8, help="每题最多回写三元组数")
-    ap.add_argument("--arm", choices=["evolved", "shuffle", "random-write"], default="evolved",
-                    help="evolved=LLM评价写回(主实验)；shuffle=evolve/eval 集对调；random-write=随机写等量边")
+    ap.add_argument("--arm", choices=["evolved", "shuffle", "random-write", "ircot"], default="evolved",
+                    help="evolved=单轮检索LLM评价写回；shuffle=集对调；random-write=随机写边；"
+                         "ircot=多轮IRCoT轨迹+轨迹级评价写回(方式A)")
     ap.add_argument("--shuffle", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args(argv)
@@ -191,6 +192,42 @@ def main(argv=None) -> int:
         n_random = _random_write(evolved_graph, args.seed, n_goal=800)
         evolver.stats.written = n_random
         print(f"[random-write] 写入 {n_random} 条随机边", flush=True)
+    elif args.arm == "ircot":
+        # 方式A：多轮 IRCoT 轨迹检索 + 轨迹级 LLM 评价，只从高价值轮次抽取知识写回
+        from agentic import run_ircot
+        from agentic.tools import Tools
+        from experiments.evograph.trajectory import judge_trajectory, selected_triples
+        from utils.prompts import PromptManager
+
+        prompts = PromptManager.from_config(cfg)
+        tools = Tools(evolved_ret)
+        traj_stats = {"steps": 0, "high": 0, "sel_chunks": 0}
+        for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
+            try:
+                ircot_res = run_ircot(q["question"], tools, evo_llm, prompts, cfg)
+                values, sel_chunks = judge_trajectory(
+                    q["question"], ircot_res.steps, evo_llm, mode=args.mode)
+                traj_stats["steps"] += len(ircot_res.steps)
+                traj_stats["high"] += sum(1 for v in values.values() if v == "high")
+                traj_stats["sel_chunks"] += len(sel_chunks)
+                if not sel_chunks:
+                    continue
+                # 进化信号 = 高价值轮次命中三元组（加权路径）∪ 高价值轮次证据抽取（增量路径）
+                candidates = selected_triples(ircot_res.steps, values)
+                candidates += evolver.extract(q["question"], sel_chunks)
+                useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
+                evolver.write_back(q["question"], q["id"], useful)
+            except Exception as err:
+                # 单题失败（LLM 内容审核/网络抖动等）跳过，不中断整轮
+                print(f"[evolve] {ei} 失败跳过: {type(err).__name__}: {err}", flush=True)
+            if ei % 25 == 0 or ei == len(ev_ids):
+                print(f"[evolve-ircot] {ei}/{len(ev_ids)} written={evolver.stats.written} "
+                      f"traj={traj_stats}", flush=True)
+        meta["trajectory"] = {
+            "avg_steps": round(traj_stats["steps"] / max(1, len(ev_ids)), 2),
+            "avg_high": round(traj_stats["high"] / max(1, len(ev_ids)), 2),
+            "avg_sel_chunks": round(traj_stats["sel_chunks"] / max(1, len(ev_ids)), 2),
+        }
     else:
         for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
             try:

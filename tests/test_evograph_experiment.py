@@ -138,3 +138,90 @@ def test_evolver_extract_skips_existing_edges(tiny_graph):
     new = ev.extract("q", [{"text": "Alpha ... Beta ... Delta won Prize"}])
     assert {(x["head"], x["relation"], x["tail"]) for x in new} == {("Delta", "won", "Prize")}
     assert all(x["is_new"] for x in new)
+
+
+# ------------------------- 方式A：IRCoT 轨迹级评价 -------------------------
+def test_judge_trajectory_mock_heuristic_and_dedup():
+    from experiments.evograph.trajectory import judge_trajectory, selected_triples
+
+    steps = [
+        {"sentence": "Find X.", "n_new": 3, "stop": "",
+         "step_chunks": [{"chunk_id": "c1", "doc_id": "d1", "score": 0.8, "text": "X lives in Y."},
+                         {"chunk_id": "c2", "doc_id": "d2", "score": 0.5, "text": "Z unrelated."}],
+         "step_triples": [{"head": "X", "relation": "lives_in", "tail": "Y", "score": 0.9}]},
+        {"sentence": "No progress.", "n_new": 0, "stop": "",
+         "step_chunks": [{"chunk_id": "c1", "doc_id": "d1", "score": 0.4, "text": "dup."}],
+         "step_triples": []},
+    ]
+    values, sel = judge_trajectory("Where does X live?", steps, llm=None, mode="mock")
+    assert values[1] == "high" and values[2] == "low"
+    # 去重：c1 只出现一次；低价值轮次不贡献
+    ids = [c["chunk_id"] for c in sel]
+    assert ids.count("c1") == 1 and "c2" in ids
+    tris = selected_triples(steps, values)
+    assert len(tris) == 1 and tris[0]["tail"] == "Y"
+
+
+def test_judge_trajectory_llm_rating_and_fallback():
+    from experiments.evograph.trajectory import judge_trajectory
+
+    steps = [{"sentence": "Find X.", "n_new": 2, "stop": "",
+              "step_chunks": [{"chunk_id": "c1", "doc_id": "d1", "score": 0.7, "text": "t"}]}]
+    # LLM 给出 low → 但该轮有新增证据，不应回退覆盖（显式评级优先）
+    llm = _StubLLM({"rated_steps": [{"step": 1, "value": "low", "reason": "noise"}]})
+    values, sel = judge_trajectory("q", steps, llm, mode="real")
+    assert values[1] == "low" and sel == []
+    # LLM 漏评 → 回退 n_new 启发式
+    llm2 = _StubLLM({"rated_steps": []})
+    values2, sel2 = judge_trajectory("q", steps, llm2, mode="real")
+    assert values2[1] == "high" and len(sel2) == 1
+    # LLM 异常 → 回退且不抛
+    class Boom:
+        def generate(self, messages):
+            raise RuntimeError("llm down")
+    values3, sel3 = judge_trajectory("q", steps, Boom(), mode="real")
+    assert values3[1] == "high" and len(sel3) == 1
+
+
+def test_ircot_records_step_chunks_for_trajectory(tmp_path):
+    """run_ircot 每轮记录 step_chunks/step_triples（方式A 的数据基础）。"""
+    try:
+        from agentic import run_ircot
+        from agentic.memory import EvidencePool  # noqa: F401
+        from agentic.tools import Tools
+    except Exception:  # pragma: no cover
+        pytest.skip("agentic 模块不可用")
+
+    class _Ret:
+        def search(self, query, top_k=None):
+            return {"chunks": [{"chunk_id": "c1", "doc_id": "d1", "score": 0.9,
+                                "source": "vector", "text": "Alpha lives in Beta city."}],
+                    "triples": [{"head": "Alpha", "relation": "related_to",
+                                 "tail": "Beta", "score": 1.0}],
+                    "entities": [], "selected_entities": [], "timing": {}}
+
+    class _LLM:
+        def __init__(self):
+            self.n = 0
+
+        def generate(self, messages):
+            self.n += 1
+            return "NEXT: Where is Alpha located?" if self.n == 1 else "FINAL ANSWER: Beta city"
+
+    class _Prompts:
+        def render(self, name, **kw):
+            return "irrelevant"
+
+    class _Cfg(dict):
+        pass
+
+    cfg = _Cfg({"agentic.max_steps": 6, "agentic.top_k_per_step": 5,
+                "agentic.min_steps": 1, "agentic.evidence_max_docs": 32,
+                "agentic.evidence_max_chars": 6000, "agentic.include_triples": True,
+                "agentic.max_triples": 12})
+    res = run_ircot("Where does Alpha live?", Tools(_Ret()), _LLM(), _Prompts(), cfg)
+    # 至少 1 轮检索发生（FINAL 前的 NEXT 轮）
+    assert res.steps, "IRCoT 应至少记录一轮"
+    s = res.steps[0]
+    assert "step_chunks" in s and s["step_chunks"][0]["chunk_id"] == "c1"
+    assert s["step_triples"][0]["relation"] == "related_to"
