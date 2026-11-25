@@ -192,13 +192,18 @@ def test_ircot_records_step_chunks_for_trajectory(tmp_path):
     except Exception:  # pragma: no cover
         pytest.skip("agentic 模块不可用")
 
+    class _ChunkRes:
+        """模拟 SearchResult（属性访问）。"""
+        chunks = [{"chunk_id": "c1", "doc_id": "d1", "score": 0.9,
+                   "source": "vector", "text": "Alpha lives in Beta city."}]
+        triples = [{"head": "Alpha", "relation": "related_to",
+                    "tail": "Beta", "score": 1.0}]
+        entities = []
+        timing = {}
+
     class _Ret:
         def search(self, query, top_k=None):
-            return {"chunks": [{"chunk_id": "c1", "doc_id": "d1", "score": 0.9,
-                                "source": "vector", "text": "Alpha lives in Beta city."}],
-                    "triples": [{"head": "Alpha", "relation": "related_to",
-                                 "tail": "Beta", "score": 1.0}],
-                    "entities": [], "selected_entities": [], "timing": {}}
+            return _ChunkRes()
 
     class _LLM:
         def __init__(self):
