@@ -230,3 +230,41 @@ def test_ircot_records_step_chunks_for_trajectory(tmp_path):
     s = res.steps[0]
     assert "step_chunks" in s and s["step_chunks"][0]["chunk_id"] == "c1"
     assert s["step_triples"][0]["relation"] == "related_to"
+
+
+# ------------------------- 增删双操作（净化维度） -------------------------
+def test_judge_deletions_stub_llm():
+    from experiments.evograph.trajectory import judge_deletions
+
+    hits = [{"head": "X", "relation": "born_in", "tail": "Paris"},
+            {"head": "Y", "relation": "related_to", "tail": "Z"}]
+    ev = [{"doc_id": "d1", "text": "X was actually born in London."}]
+    # LLM 判定第 1 条与证据矛盾 → 删
+    llm = _StubLLM({"deletions": [{"index": 1, "reason": "contradicted"}]})
+    out = judge_deletions("Where was X born?", hits, ev, llm, mode="real")
+    assert len(out) == 1 and out[0]["head"] == "X" and "reason" in out[0]
+    # mock 模式保守不删
+    assert judge_deletions("q", hits, ev, None, mode="mock") == []
+    # 空/异常回退
+    class Boom:
+        def generate(self, m):
+            raise RuntimeError("down")
+    assert judge_deletions("q", hits, ev, Boom(), mode="real") == []
+
+
+def test_delete_back_removes_edges_and_logs(tiny_graph):
+    from experiments.evograph.evolver import Evolver
+
+    class _NoLlm:
+        pass
+
+    ev = Evolver(tiny_graph, _NoLlm(), mode="mock")
+    assert tiny_graph.has_triple("Alpha", "related_to", "Beta")
+    out = ev.delete_back("q1", [{"head": "Alpha", "relation": "related_to",
+                                 "tail": "Beta", "reason": "noise"}])
+    assert out == [("Alpha", "related_to", "Beta")]
+    assert ev.stats.deleted == 1
+    assert not tiny_graph.has_triple("Alpha", "related_to", "Beta")
+    # 幂等：再删返回空
+    assert ev.delete_back("q1", [{"head": "Alpha", "relation": "related_to", "tail": "Beta"}]) == []
+    assert ev.stats.deleted == 1

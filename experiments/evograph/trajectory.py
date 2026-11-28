@@ -110,3 +110,88 @@ def selected_triples(steps: List[dict], values: Dict[int, str]) -> List[dict]:
         if values.get(i, "low") in ("high", "medium"):
             out.extend(dict(t) for t in (s.get("step_triples") or []))
     return out
+
+
+# ------------------------- 三元组删除（净化维度） -------------------------
+_DELETE_PROMPT = """<user>
+Question: {question}
+
+Evidence (chunks retrieved during multi-round search):
+{evidence}
+
+Graph triples hit during retrieval (numbered):
+{triples}
+
+Mark triples that are clearly WRONG or NOISY for DELETION:
+- contradicted by the evidence above, OR
+- nonsensical / broken extraction (e.g. a date or place as an entity acting as a person), OR
+- relation does not hold between head and tail at all.
+
+Rules:
+- Only delete when clearly wrong. When unsure, KEEP.
+- Do NOT delete triples that are merely irrelevant to this question.
+
+Output STRICT JSON only, no markdown fence:
+{{"deletions": [{{"index": 1, "reason": "short reason"}}]}}
+(index refers to the numbered triple above; empty list if nothing to delete)
+</user>"""
+
+_MAX_DEL_PER_Q = 4          # 每题删除上限（保守，防误删）
+
+
+def judge_deletions(
+    question: str,
+    hit_triples: List[dict],
+    evidence_chunks: List[dict],
+    llm,
+    mode: str = "real",
+    max_chars: int = 3000,
+) -> List[dict]:
+    """轨迹评价的删除维度：图内命中三元组中明显错误/噪声的边。
+
+    返回待删列表 [{"head","relation","tail","reason"}]；mock 模式无法判断，保守不删。
+    """
+    if not hit_triples or mode == "mock":
+        return []
+    # 编号去重（head/relation/tail 唯一）
+    uniq, seen = [], set()
+    for t in hit_triples:
+        key = (str(t.get("head")), str(t.get("relation")), str(t.get("tail")))
+        if key in seen or not all(key):
+            continue
+        seen.add(key)
+        uniq.append(dict(t))
+
+    evidence = " | ".join(
+        f"[{c.get('doc_id')}] {(c.get('text') or '')[:110]}"
+        for c in evidence_chunks[:6]
+    )[:max_chars // 2]
+    lines = "\n".join(
+        f"{i}. {t['head']} -{t['relation']}-> {t['tail']}"
+        for i, t in enumerate(uniq, 1)
+    )
+    try:
+        raw = (llm.generate([{
+            "role": "user",
+            "content": _DELETE_PROMPT.format(
+                question=question, evidence=evidence or "(none)", triples=lines),
+        }]) or "").strip()
+        m = re.search(r"\{.*\}", raw, re.DOTALL)
+        data = json.loads(m.group(0)) if m else {}
+        out = []
+        for item in data.get("deletions", []):
+            try:
+                idx = int(item.get("index", 0)) - 1
+            except (TypeError, ValueError):
+                continue
+            if 0 <= idx < len(uniq):
+                d = dict(uniq[idx])
+                d["reason"] = str(item.get("reason", ""))[:200]
+                if d not in out:
+                    out.append(d)
+            if len(out) >= _MAX_DEL_PER_Q:
+                break
+        return out
+    except Exception as err:  # noqa: BLE001
+        logger.warning("删除评价失败，保守跳过: %s", err)
+        return []

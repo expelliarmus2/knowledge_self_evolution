@@ -33,6 +33,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="IRCoT 多轮检索能力评测（vs 单轮 R@10=0.4817）")
     ap.add_argument("--limit", type=int, default=0, help="冒烟：前 N 题（0=全量 500）")
     ap.add_argument("--processed", default="data/processed_musique")
+    ap.add_argument("--graph", default=None,
+                    help="改进图 pickle（run_experiment 保存）；缺省=原图 processed/graph.pkl")
     ap.add_argument("--tag", default="ircot_eval")
     args = ap.parse_args(argv)
 
@@ -50,7 +52,8 @@ def main(argv=None) -> int:
 
     cfg = Config.load(overrides={"paths": {"processed_dir": str(processed)}})
     os.environ["KB_PATHS__PROCESSED_DIR"] = str(processed)
-    graph, retriever, llm = _build_retriever(cfg, processed)
+    graph, retriever, llm = _build_retriever(cfg, processed, graph_path=args.graph)
+    graph_label = "evolved" if args.graph else "original"
 
     from agentic import run_ircot
     from agentic.tools import Tools
@@ -97,6 +100,7 @@ def main(argv=None) -> int:
     ok = [r for r in recs if "error" not in r]
     out = {
         "meta": {"n_eval": len(te_ids), "n_ok": len(ok),
+                 "graph": graph_label,
                  "doc_coverage": getattr(split, "doc_coverage", None),
                  "elapsed_s": round(time.time() - t0, 1)},
         "summary": {
@@ -110,6 +114,8 @@ def main(argv=None) -> int:
         "records": recs,
     }
     path = ART / f"{args.tag}_n{len(te_ids)}.json"
+    if graph_label == "evolved":
+        path = ART / f"{args.tag}_evolved_n{len(te_ids)}.json"
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(out["summary"], ensure_ascii=False))
     print(f"saved → {path}")

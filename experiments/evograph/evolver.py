@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from graph.knowledge_graph import KnowledgeGraph
 from openie.llm_client import LLMClient, MockLLMClient
@@ -22,6 +22,7 @@ class EvolveStats:
     written: int = 0            # 实际新写入（去重后）
     deduped: int = 0            # 已存在只累权
     rejected: int = 0           # 判定无用/过滤
+    deleted: int = 0            # 轨迹评价判定错误已删除的图内边
     log: List[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -217,6 +218,21 @@ class Evolver:
         return out
 
     # ---------- 回写 ----------
+    def delete_back(self, qid: str, deletions: List[dict]) -> List[Tuple[str, str, str]]:
+        """轨迹评价判定错误的图内三元组删除（净化维度，保守上限内）。"""
+        out: List[Tuple[str, str, str]] = []
+        for d in deletions or ():
+            h, r, t = d.get("head"), d.get("relation"), d.get("tail")
+            if not (h and r and t):
+                continue
+            if self.graph.remove_triple(h, r, t):
+                self.stats.deleted += 1
+                out.append((h, r, t))
+                self.stats.log.append({"qid": qid, "op": "delete", "head": h,
+                                       "relation": r, "tail": t,
+                                       "reason": d.get("reason", "")})
+        return out
+
     def write_back(self, question: str, qid: str, useful: List[dict]) -> None:
         if not useful:
             return

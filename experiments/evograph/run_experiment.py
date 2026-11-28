@@ -69,7 +69,7 @@ def _title_overlap(split, evolve_ids, eval_ids) -> dict:
     }
 
 
-def _build_retriever(cfg: Config, processed: Path):
+def _build_retriever(cfg: Config, processed: Path, graph_path: str | None = None):
     from graph.knowledge_graph import KnowledgeGraph
     from openie.embedder import build_embedder
     from openie.llm_client import build_llm
@@ -77,13 +77,13 @@ def _build_retriever(cfg: Config, processed: Path):
     from utils.prompts import PromptManager
     from vectorstore.manager import VectorStoreManager
 
-    graph_path = processed / "graph.pkl"
-    graph = KnowledgeGraph.load(graph_path)
+    graph_path_full = Path(graph_path) if graph_path else (processed / "graph.pkl")
+    graph = KnowledgeGraph.load(graph_path_full)
     embedder = build_embedder(cfg)
     llm = build_llm(cfg)
     vdb = VectorStoreManager(cfg, embedder, processed)
     prompts = PromptManager.from_config(cfg)
-    retriever = Retriever(cfg, graph, vdb, embedder, llm, prompts, graph_path=graph_path)
+    retriever = Retriever(cfg, graph, vdb, embedder, llm, prompts, graph_path=graph_path_full)
     return graph, retriever, llm
 
 
@@ -193,15 +193,16 @@ def main(argv=None) -> int:
         evolver.stats.written = n_random
         print(f"[random-write] 写入 {n_random} 条随机边", flush=True)
     elif args.arm == "ircot":
-        # 方式A：多轮 IRCoT 轨迹检索 + 轨迹级 LLM 评价，只从高价值轮次抽取知识写回
+        # 方式A：多轮 IRCoT 轨迹检索 + 轨迹级 LLM 评价，只从高价值轮次抽取知识写回；
+        # 増（新知识）与删（图内错误/噪声边）双操作，进化后保存改进图供 2×2 评测
         from agentic import run_ircot
         from agentic.tools import Tools
-        from experiments.evograph.trajectory import judge_trajectory, selected_triples
+        from experiments.evograph.trajectory import judge_deletions, judge_trajectory, selected_triples
         from utils.prompts import PromptManager
 
         prompts = PromptManager.from_config(cfg)
         tools = Tools(evolved_ret)
-        traj_stats = {"steps": 0, "high": 0, "sel_chunks": 0}
+        traj_stats = {"steps": 0, "high": 0, "sel_chunks": 0, "del_cand": 0}
         for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
             try:
                 ircot_res = run_ircot(q["question"], tools, evo_llm, prompts, cfg)
@@ -212,21 +213,30 @@ def main(argv=None) -> int:
                 traj_stats["sel_chunks"] += len(sel_chunks)
                 if not sel_chunks:
                     continue
-                # 进化信号 = 高价值轮次命中三元组（加权路径）∪ 高价值轮次证据抽取（增量路径）
-                candidates = selected_triples(ircot_res.steps, values)
+                # 进化信号 = 高价值轮次命中三元组（加权/删除候选）∪ 高价值轮次证据抽取（增量路径）
+                hit_triples = selected_triples(ircot_res.steps, values)
+                candidates = list(hit_triples)
                 candidates += evolver.extract(q["question"], sel_chunks)
                 useful = evolver.judge(q["question"], _decomposition_text(q), candidates)
                 evolver.write_back(q["question"], q["id"], useful)
+                # 删除维度：高价值轮命中的图内三元组中明显错误/噪声的边
+                in_graph = [t for t in hit_triples
+                            if evolved_graph.g.has_edge(t["head"], t["tail"], key=t["relation"])]
+                traj_stats["del_cand"] += len(in_graph)
+                deletions = judge_deletions(q["question"], in_graph, sel_chunks,
+                                            evo_llm, mode=args.mode)
+                evolver.delete_back(q["id"], deletions)
             except Exception as err:
                 # 单题失败（LLM 内容审核/网络抖动等）跳过，不中断整轮
                 print(f"[evolve] {ei} 失败跳过: {type(err).__name__}: {err}", flush=True)
             if ei % 25 == 0 or ei == len(ev_ids):
                 print(f"[evolve-ircot] {ei}/{len(ev_ids)} written={evolver.stats.written} "
-                      f"traj={traj_stats}", flush=True)
+                      f"deleted={evolver.stats.deleted} traj={traj_stats}", flush=True)
         meta["trajectory"] = {
             "avg_steps": round(traj_stats["steps"] / max(1, len(ev_ids)), 2),
             "avg_high": round(traj_stats["high"] / max(1, len(ev_ids)), 2),
             "avg_sel_chunks": round(traj_stats["sel_chunks"] / max(1, len(ev_ids)), 2),
+            "del_candidates": traj_stats["del_cand"],
         }
     else:
         for ei, q in enumerate((qmap[i] for i in ev_ids), start=1):
@@ -264,6 +274,10 @@ def main(argv=None) -> int:
     }
 
     tag = f"{args.mode}_n{len(te_ids)}_{args.arm}"
+    # 保存改进图（增删后的 evolved graph），供 2×2 评测（ircot_eval --graph）与后续审计
+    graph_out = ART / f"graph_{tag}.pkl"
+    evolved_graph.save(graph_out)
+    result["graph"]["evolved_graph_path"] = str(graph_out)
     (ART / f"split_{tag}.json").write_text(json.dumps({
         "evolve_ids": ev_ids, "eval_ids": te_ids,
         "overlap": meta["split_overlap"],
