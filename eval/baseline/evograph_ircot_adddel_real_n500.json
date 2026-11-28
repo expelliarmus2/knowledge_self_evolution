@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "mode": "real",
+    "limit": 0,
+    "top_k": 10,
+    "n_evolve": 500,
+    "n_eval": 500,
+    "corpus_docs": 0,
+    "corpus_chunks": 12344,
+    "split_overlap": {
+      "evolve_titles": 5972,
+      "eval_titles": 5868,
+      "shared_titles": 2002,
+      "eval_covered_ratio": 0.3412
+    },
+    "doc_coverage": {
+      "support": 0.8369,
+      "all": 0.8201,
+      "support_total": 2648,
+      "support_covered": 2216
+    },
+    "shuffle": false,
+    "seed": 42,
+    "trajectory": {
+      "avg_steps": 4.27,
+      "avg_high": 0.92,
+      "avg_sel_chunks": 6.03,
+      "del_candidates": 10560
+    }
+  },
+  "graph": {
+    "version_before": 209815,
+    "version_after": 212713,
+    "triples_after": null,
+    "evolved_graph_path": "experiments/evograph/artifacts/graph_real_n500_ircot.pkl"
+  },
+  "evolve_stats": {
+    "evaluated": 440,
+    "candidates": 12403,
+    "judged_useful": 1576,
+    "written": 759,
+    "deduped": 817,
+    "rejected": 0,
+    "deleted": 1087
+  },
+  "timing": {
+    "baseline_eval_s": 1358.55,
+    "evolve_s": 3705.89,
+    "evolved_eval_s": 1353.93
+  },
+  "baseline": {
+    "n": 500,
+    "recall": {
+      "1": 0.2232,
+      "5": 0.4072,
+      "10": 0.4817
+    },
+    "mrr": 0.5122,
+    "hit": {
+      "1": 0.44,
+      "5": 0.612,
+      "10": 0.666
+    }
+  },
+  "evolved": {
+    "n": 500,
+    "recall": {
+      "1": 0.2185,
+      "5": 0.4043,
+      "10": 0.4795
+    },
+    "mrr": 0.5061,
+    "hit": {
+      "1": 0.43,
+      "5": 0.608,
+      "10": 0.66
+    }
+  },
+  "comparison": {
+    "recall": {
+      "@1": {
+        "baseline": 0.2232,
+        "evolved": 0.2185,
+        "delta": -0.0047,
+        "rel": -0.0211
+      },
+      "@5": {
+        "baseline": 0.4072,
+        "evolved": 0.4043,
+        "delta": -0.0029,
+        "rel": -0.0071
+      },
+      "@10": {
+        "baseline": 0.4817,
+        "evolved": 0.4795,
+        "delta": -0.0022,
+        "rel": -0.0046
+      }
+    },
+    "hit": {
+      "@1": {
+        "baseline": 0.44,
+        "evolved": 0.43,
+        "delta": -0.01,
+        "rel": -0.0227
+      },
+      "@5": {
+        "baseline": 0.612,
+        "evolved": 0.608,
+        "delta": -0.004,
+        "rel": -0.0065
+      },
+      "@10": {
+        "baseline": 0.666,
+        "evolved": 0.66,
+        "delta": -0.006,
+        "rel": -0.009
+      }
+    },
+    "mrr": {
+      "baseline": 0.5122,
+      "evolved": 0.5061,
+      "delta": -0.0061,
+      "rel": -0.0119
+    }
+  }
+}
