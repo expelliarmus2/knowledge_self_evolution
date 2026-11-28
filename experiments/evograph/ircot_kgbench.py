@@ -103,6 +103,13 @@ def _para_to_text(p: dict) -> str:
     return f"Wikipedia Title: {title}\n{text.strip()}"
 
 
+def _clean_answer(a: str) -> str:
+    a = str(a).strip().strip('"').strip("'").strip()
+    while a.endswith(".") or a.endswith("。"):
+        a = a[:-1].rstrip()
+    return a.strip()
+
+
 def run_ircot_kgbench(question: str, llm, shots: str, ch: ChunkHopClient):
     """KG_Bench IRCoT 主循环。返回 (answer, sentences, paras 顺序列表, stop_reason)。"""
     paras: list[dict] = []          # 累积段落（发现顺序）
@@ -153,11 +160,21 @@ def run_ircot_kgbench(question: str, llm, shots: str, ch: ChunkHopClient):
     for s in reversed(sentences):
         m = _ANSWER_RE.match(s)
         if m:
-            answer = m.group(1).strip()
+            answer = _clean_answer(m.group(1))
             break
     if answer == "EMPTY":
         m2 = _ANSWER_RE.match(" ".join(sentences))
-        answer = m2.group(1).strip() if m2 else " ".join(sentences)[-200:]
+        answer = _clean_answer(m2.group(1)) if m2 else ""
+    if not answer:  # 兑底：证据池上直接抽短答案（一次额外 LLM 调用）
+        evidence = "\n\n".join(_para_to_text(p) for p in paras[:_GLOBAL_MAX])
+        try:
+            direct = llm.generate([{"role": "user", "content": (
+                "Answer the question using ONLY the passages below. "
+                "Reply with the short final answer only, nothing else.\n\n"
+                f"{evidence}\n\nQ: {question}\nA:")}]) or ""
+            answer = _clean_answer(_first_sentence(direct) or direct)
+        except Exception:  # noqa: BLE001
+            answer = " ".join(sentences)[-200:]
     return answer, sentences, paras, stop
 
 
